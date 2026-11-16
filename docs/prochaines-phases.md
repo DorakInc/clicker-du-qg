@@ -96,7 +96,7 @@ On possède un objet quand on possède l'amélioration ou le producteur. Les don
 
 ### État (16 novembre 2026)
 
-1.A, 1.B et 1.C sont faits sur la branche `gameplay` : `src/game/studio.js` (testé dans `tests/studio.test.js`), `data/decor.json`, `src/ui/studio-view.js` et `src/ui/iso.js`. Choix retenus :
+1.A, 1.B et 1.C sont faits sur la branche `gameplay` : `src/game/studio.js` (testé dans `tests/studio.test.js`), `data/decor.json`, `src/ui/studio-view.js` (devenu `src/ui/room-view.js`) et `src/ui/iso.js`. Choix retenus :
 - la pièce **remplace le fond** de la scène Studio, au-dessus du vinyle ;
 - les producteurs « pas physiques » (label, tournée, studio lunaire, station orbitale) sont des **cadres au mur** ; l'ami beatmaker et l'ingé son (des personnes) restent hors de la pièce pour l'instant (1.E) ;
 - **cosmétique seulement** en v1 ;
@@ -105,6 +105,7 @@ On possède un objet quand on possède l'amélioration ou le producteur. Les don
 - 1.D : les 22 objets sont dessinés en code (`scripts/sprites/objets-iso.js`) ; gabarits pour dessiner à la main dans `docs/gabarits-iso/` ;
 - 1.E : les animaux adoptés se promènent entre les objets (chemin qui contourne les objets) et on peut les flatter ; le compagnon reste à côté du personnage, qui se tient sur la tuile libre la plus proche du centre ;
 - 1.F : 11 combos de vibe dans `decor.json` (+3 % à +10 %, ou -3 % à -10 % pour les stats où moins c'est mieux). **L'équilibrage reste à valider en jouant** : tous les combos actifs ensemble donnent environ ×1,05 sur la valeur des beats, ×1,10 sur la production auto, ×1,10 sur le clic et ×1,08 sur l'inspiration.
+- **La serre isométrique** : même procédé que le studio (`serreRoom` dans `src/game/studio.js`, `decor` dans `data/greenhouse.json`, vue partagée `src/ui/room-view.js`, décor vitré dans `src/ui/room-themes.js`). 19 objets dessinés en code (`scripts/sprites/objets-serre.js`) : les 8 équipements, un plant par variété, et 3 objets déco (arrosoir, sac de terreau, pancarte). 11 combos de vibe sur les stats de la serre ; tous ensemble : environ ×1,13 sur la pousse, ×1,21 sur la récolte au clic. **Équilibrage à valider en jouant**, comme pour le studio. Plan sauvegardé dans `state.serre`.
 
 ### Décisions à prendre
 

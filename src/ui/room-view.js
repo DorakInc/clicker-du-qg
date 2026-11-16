@@ -1,11 +1,14 @@
-// Le studio en vue isométrique : la pièce du QG dessinée sur deux canvas
-// (derrière et devant le personnage), le mode Édition au toucher, la vibe
-// (bonus quand deux objets se touchent) et les animaux qui se promènent.
+// Une pièce en vue isométrique (le studio du QG, la serre) : la pièce dessinée
+// sur deux canvas (derrière et devant le personnage), le mode Édition au
+// toucher, la vibe (bonus quand deux objets se touchent) et, au studio, les
+// animaux qui se promènent. Le décor de chaque pièce (murs, sol) est dans
+// room-themes.js ; la logique (placer, tourner, ranger) dans src/game/studio.js.
 //
 // Ne modifie jamais l'état : les changements de plan passent par
 // `actions` (place, move, rotate, store, done) fournies par main.js.
 //
-// Sprites (volet B) : assets/images/<sprite de decor.json>. Tant que le fichier
+// Sprites (volet B) : assets/images/<sprite de l'objet> (data/decor.json pour le
+// studio, "decor" de data/greenhouse.json pour la serre). Tant que le fichier
 // manque, l'objet est une boîte de couleur (`color`, `height`).
 //   Au sol : l'image est centrée sur l'emprise de l'objet, le bas de l'image
 //   sur la pointe avant du losange. Largeur conseillée : (largeur + profondeur) × 16 px.
@@ -15,56 +18,65 @@
 //   et facultative, celle du mur de gauche (sinon : miroir) ; le bas de l'image est le bout avant du panneau, à la
 //   hauteur `elevation`.
 
-import {
-  canPlace, decorDef, decorName, footprint, inventory, isWallItem, nextRotation, ownsDecor, petLevel, placedEntry, roomSize,
-  rotationCount, vibeStatus,
-} from '../game/index.js';
+import { decorName, footprint, isWallItem, nextRotation, petLevel, rotationCount } from '../game/index.js';
 import { TILE_W, drawBox, drawWallPanel, polygon, project, shade, tileDiamond, unproject } from './iso.js';
 
 const MARGIN_X = 8;
 const FLOOR_TOP = 40; // les murs dépassent du haut du canvas : un sous-sol, vu de près
-const WALL_H = 140;
+export const WALL_H = 140;
 const LONG_PRESS_MS = 420;
 const DRAG_START = 5; // pixels du canvas avant qu'un appui devienne un glisser
 const PET_SPEED = 1.3; // tuiles par seconde
 const PET_W = 28; // une image d'animal : 28 × 20, deux images côte à côte
 
 const COLORS = {
-  void: '#1b1426',
-  floor: ['#d8ccb0', '#cfc2a5'],
-  floorLine: 'rgba(90, 70, 50, .18)',
-  wallR: '#b3a274', wallL: '#9c8b5f', wallTrim: '#3b2f2a', wallGlow: 'rgba(255, 240, 200, .12)',
-  rug: '#f4efe6', rugSpot: '#7a4e33',
   ok: 'rgba(110, 230, 120, .55)', okLine: '#3fbf4f',
   bad: 'rgba(240, 70, 70, .55)', badLine: '#d83a3a',
   select: '#ffd166',
 };
 
-export function createStudioView(data, { scene, character, pet, actions, toast, describe, onPet }) {
-  const back = document.getElementById('qg-room');
-  const front = document.getElementById('qg-room-front');
-  const editor = document.getElementById('studio-editor');
-  const editButton = document.getElementById('studio-edit');
-  const hint = document.getElementById('studio-hint');
-  const inventoryList = document.getElementById('studio-inventory');
-  const inventoryTitle = document.getElementById('studio-inventory-title');
+/**
+ * Crée la vue d'une pièce.
+ *   room     les fonctions de la pièce (studioRoom ou serreRoom, src/game/studio.js)
+ *   scene    l'élément de la scène (data-scene du jeu = room.id quand on la voit)
+ *   canvases { back, front } : derrière et devant le personnage
+ *   prefix   préfixe des identifiants de l'éditeur (<prefix>-edit, <prefix>-hint...)
+ *   theme    { drawRoom(ctx, geo) } : les murs et le sol (room-themes.js)
+ *   labels   { the: 'le studio', of: 'du studio' } pour les textes
+ *   pet      l'animal assis à côté du personnage (facultatif)
+ *   walkers  true : les autres animaux adoptés se promènent dans la pièce
+ */
+export function createRoomView(data, {
+  room, scene, canvases, prefix, theme, labels, character, pet = null, walkers: withWalkers = false, actions, toast, describe, onPet,
+}) {
+  const $ = (name) => document.getElementById(`${prefix}-${name}`);
+  const { back, front } = canvases;
+  const editor = $('editor');
+  const editButton = $('edit');
+  const hint = $('hint');
+  const inventoryList = $('inventory');
+  const inventoryTitle = $('inventory-title');
   const tools = {
-    rotate: document.getElementById('studio-rotate'),
-    move: document.getElementById('studio-move'),
-    store: document.getElementById('studio-store'),
-    drop: document.getElementById('studio-drop'),
-    cancel: document.getElementById('studio-cancel'),
-    done: document.getElementById('studio-done'),
+    rotate: $('rotate'),
+    move: $('move'),
+    store: $('store'),
+    drop: $('drop'),
+    cancel: $('cancel'),
+    done: $('done'),
   };
   const game = document.getElementById('game-screen');
-  const vibeList = document.getElementById('studio-vibe');
-  const vibeTitle = document.getElementById('studio-vibe-title');
-  const vibeChip = document.getElementById('studio-vibe-chip');
-  const vibeCount = document.getElementById('studio-vibe-count');
+  const vibeList = $('vibe');
+  const vibeTitle = $('vibe-title');
+  const vibeChip = $('vibe-chip');
+  const vibeCount = $('vibe-count');
+  const { canPlace, decorDef, inventory, placedEntry, roomSize, vibeStatus } = room;
+  const plan = () => state[room.plan];
+  const items = () => room.decorOf(data)?.items ?? [];
+  const editLabel = `Réaménager ${labels.the}`;
   const roomLayer = document.createElement('canvas'); // murs et sol, dessinés une fois
 
   let state = null;
-  let room = { width: 8, depth: 8 };
+  let size = { width: 8, depth: 8 };
   let origin = { x: 0, y: 0 };
   let width = 0;
   let height = 0;
@@ -87,10 +99,10 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
   // ---- Géométrie ----
 
   function resize() {
-    room = roomSize(state, data);
-    width = (room.width + room.depth) * (TILE_W / 2) + MARGIN_X * 2;
-    height = FLOOR_TOP + (room.width + room.depth) * 8 + 2;
-    origin = { x: MARGIN_X + room.depth * (TILE_W / 2), y: FLOOR_TOP };
+    size = roomSize(state, data);
+    width = (size.width + size.depth) * (TILE_W / 2) + MARGIN_X * 2;
+    height = FLOOR_TOP + (size.width + size.depth) * 8 + 2;
+    origin = { x: MARGIN_X + size.depth * (TILE_W / 2), y: FLOOR_TOP };
     for (const canvas of [back, front, roomLayer]) {
       canvas.width = width;
       canvas.height = height;
@@ -112,14 +124,14 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
       const len = def.footprint[0];
       const wall = rot === 1 || (rot === undefined && point.x < origin.x) ? 'L' : 'R';
       const along = Math.abs(point.x - origin.x) / (TILE_W / 2) - len / 2;
-      if (wall === 'R') return { x: clamp(Math.round(along), 0, room.width - len), y: 0, rot: 0 };
-      return { x: 0, y: clamp(Math.round(along), 0, room.depth - len), rot: 1 };
+      if (wall === 'R') return { x: clamp(Math.round(along), 0, size.width - len), y: 0, rot: 0 };
+      return { x: 0, y: clamp(Math.round(along), 0, size.depth - len), rot: 1 };
     }
     const [w, d] = footprint(def, rot);
     const at = unproject(origin, point.x, point.y);
     return {
-      x: clamp(Math.round(at.x - w / 2), 0, room.width - w),
-      y: clamp(Math.round(at.y - d / 2), 0, room.depth - d),
+      x: clamp(Math.round(at.x - w / 2), 0, size.width - w),
+      y: clamp(Math.round(at.y - d / 2), 0, size.depth - d),
       rot,
     };
   }
@@ -142,7 +154,7 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
   // ---- Dessin ----
 
   function loadSprites() {
-    for (const def of data.decor?.items ?? []) {
+    for (const def of items()) {
       if (!def.sprite) continue;
       const img = new Image();
       img.addEventListener('load', () => {
@@ -154,34 +166,7 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
   }
 
   function drawRoom(ctx) {
-    ctx.fillStyle = COLORS.void;
-    ctx.fillRect(0, 0, width, height);
-    // Murs : gauche (x = 0) et droite (y = 0), plus hauts que le canvas.
-    polygon(ctx, [project(origin, 0, 0, WALL_H), project(origin, 0, room.depth, WALL_H), project(origin, 0, room.depth), project(origin, 0, 0)], COLORS.wallL);
-    polygon(ctx, [project(origin, 0, 0, WALL_H), project(origin, room.width, 0, WALL_H), project(origin, room.width, 0), project(origin, 0, 0)], COLORS.wallR);
-    // Lumière douce de la lampe du plafond sur le mur de droite.
-    polygon(ctx, [project(origin, 1, 0, WALL_H), project(origin, 4, 0, WALL_H), project(origin, 4, 0), project(origin, 1, 0)], COLORS.wallGlow);
-    // Le sol en béton peint, en damier léger.
-    for (let x = 0; x < room.width; x += 1) {
-      for (let y = 0; y < room.depth; y += 1) {
-        polygon(ctx, tileDiamond(origin, x, y), COLORS.floor[(x + y) % 2], COLORS.floorLine);
-      }
-    }
-    // Plinthes.
-    polygon(ctx, [project(origin, 0, 0, 3), project(origin, 0, room.depth, 3), project(origin, 0, room.depth), project(origin, 0, 0)], COLORS.wallTrim);
-    polygon(ctx, [project(origin, 0, 0, 3), project(origin, room.width, 0, 3), project(origin, room.width, 0), project(origin, 0, 0)], shade(COLORS.wallTrim, 0.15));
-    // Le tapis en peau de vache, au milieu de la pièce.
-    const c = project(origin, room.width / 2, room.depth / 2);
-    ctx.fillStyle = COLORS.rug;
-    ctx.beginPath();
-    ctx.ellipse(c.x, c.y, 34, 14, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = COLORS.rugSpot;
-    for (const [dx, dy, rx, ry] of [[-18, -3, 7, 3], [8, 4, 9, 4], [20, -5, 5, 2], [-4, 7, 4, 2]]) {
-      ctx.beginPath();
-      ctx.ellipse(c.x + dx, c.y + dy, rx, ry, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    theme.drawRoom(ctx, { origin, room: size, width, height, wallH: WALL_H });
   }
 
   function wallPoints(def, { x, y, rot }) {
@@ -260,18 +245,18 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
   /** La tuile libre la plus proche du milieu de la pièce (pour le personnage), puis une voisine pour l'animal. */
   function standingSpots() {
     const taken = new Set();
-    for (const entry of state.studio.layout) {
+    for (const entry of plan().layout) {
       const def = decorDef(data, entry.id);
       if (!def || isWallItem(def)) continue;
       const [w, d] = footprint(def, entry.rot);
       for (let i = 0; i < w; i += 1) for (let j = 0; j < d; j += 1) taken.add(`${entry.x + i},${entry.y + j}`);
     }
-    const free = (x, y) => x >= 0 && y >= 0 && x < room.width && y < room.depth && !taken.has(`${x},${y}`);
-    const cx = Math.floor(room.width / 2) - 1;
-    const cy = Math.floor(room.depth / 2);
+    const free = (x, y) => x >= 0 && y >= 0 && x < size.width && y < size.depth && !taken.has(`${x},${y}`);
+    const cx = Math.floor(size.width / 2) - 1;
+    const cy = Math.floor(size.depth / 2);
     let best = null;
-    for (let x = 0; x < room.width; x += 1) {
-      for (let y = 0; y < room.depth; y += 1) {
+    for (let x = 0; x < size.width; x += 1) {
+      for (let y = 0; y < size.depth; y += 1) {
         if (!free(x, y)) continue;
         const dist = Math.abs(x - cx) + Math.abs(y - cy) + (x + y < cx + cy ? 0.5 : 0); // plutôt vers l'avant
         if (!best || dist < best.dist) best = { x, y, dist };
@@ -302,7 +287,7 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
     petHits = [];
     ghostBox = null;
 
-    const entries = state.studio.layout
+    const entries = plan().layout
       .map((entry) => ({ entry, def: decorDef(data, entry.id) }))
       .filter((x) => x.def);
     const walls = entries.filter((x) => isWallItem(x.def));
@@ -315,9 +300,11 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
       const spots = standingSpots();
       splitDepth = spots.me.x + spots.me.y + 1;
       placeOverlay(character, spots.me);
-      placeOverlay(pet, spots.pet, project(origin, spots.pet.x, spots.pet.y).x < project(origin, spots.me.x, spots.me.y).x);
-      syncWalkers(spots);
-      pets = [...walkers.entries()].map(([id, w]) => ({ id, w, depth: w.x + w.y }));
+      if (pet) placeOverlay(pet, spots.pet, project(origin, spots.pet.x, spots.pet.y).x < project(origin, spots.me.x, spots.me.y).x);
+      if (withWalkers) {
+        syncWalkers(spots);
+        pets = [...walkers.entries()].map(([id, w]) => ({ id, w, depth: w.x + w.y }));
+      }
     }
 
     const lifted = holding?.from ? holding.id : '';
@@ -372,13 +359,13 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
   function walkable(spots) {
     const free = new Set();
     const taken = new Set([`${spots.me.x},${spots.me.y}`, `${spots.pet.x},${spots.pet.y}`]);
-    for (const entry of state.studio.layout) {
+    for (const entry of plan().layout) {
       const def = decorDef(data, entry.id);
       if (!def || isWallItem(def)) continue;
       const [w, d] = footprint(def, entry.rot);
       for (let i = 0; i < w; i += 1) for (let j = 0; j < d; j += 1) taken.add(`${entry.x + i},${entry.y + j}`);
     }
-    for (let x = 0; x < room.width; x += 1) for (let y = 0; y < room.depth; y += 1) if (!taken.has(`${x},${y}`)) free.add(`${x},${y}`);
+    for (let x = 0; x < size.width; x += 1) for (let y = 0; y < size.depth; y += 1) if (!taken.has(`${x},${y}`)) free.add(`${x},${y}`);
     return free;
   }
 
@@ -482,7 +469,7 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
 
   /** Flatter un animal qui se promène : il s'arrête, remue la queue, un cœur s'envole. */
   scene.addEventListener('click', (event) => {
-    if (editing || (event.target !== scene && !event.target.classList?.contains('room-canvas'))) return;
+    if (!withWalkers || editing || (event.target !== scene && !event.target.classList?.contains('room-canvas'))) return;
     const point = toCanvas(event);
     const hit = [...petHits].reverse().find((h) => point.x >= h.x0 - 2 && point.x <= h.x1 + 2 && point.y >= h.y0 - 2 && point.y <= h.y1 + 2);
     const w = hit && walkers.get(hit.id);
@@ -536,7 +523,7 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
     editor.hidden = !on;
     editButton.setAttribute('aria-pressed', String(on));
     editButton.textContent = on ? '✓' : '✏️';
-    editButton.setAttribute('aria-label', on ? 'Terminer le réaménagement' : 'Réaménager le studio');
+    editButton.setAttribute('aria-label', on ? 'Terminer le réaménagement' : editLabel);
     if (!on) actions.done();
     refresh(true);
   }
@@ -553,16 +540,16 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
   function findGhostStart(def) {
     for (let rot = 0; rot < rotationCount(def); rot += 1) {
       const [w, d] = isWallItem(def) ? [def.footprint[0], 1] : footprint(def, rot);
-      const lenX = isWallItem(def) ? (rot === 1 ? 1 : room.width - w + 1) : room.width - w + 1;
-      const lenY = isWallItem(def) ? (rot === 1 ? room.depth - def.footprint[0] + 1 : 1) : room.depth - d + 1;
+      const lenX = isWallItem(def) ? (rot === 1 ? 1 : size.width - w + 1) : size.width - w + 1;
+      const lenY = isWallItem(def) ? (rot === 1 ? size.depth - def.footprint[0] + 1 : 1) : size.depth - d + 1;
       // On commence au milieu de la pièce, puis on s'en éloigne.
       const cells = [];
       for (let x = 0; x < lenX; x += 1) for (let y = 0; y < lenY; y += 1) cells.push({ x, y });
-      cells.sort((a, b) => Math.abs(a.x - room.width / 2 + 1) + Math.abs(a.y - room.depth / 2 + 1) - (Math.abs(b.x - room.width / 2 + 1) + Math.abs(b.y - room.depth / 2 + 1)));
+      cells.sort((a, b) => Math.abs(a.x - size.width / 2 + 1) + Math.abs(a.y - size.depth / 2 + 1) - (Math.abs(b.x - size.width / 2 + 1) + Math.abs(b.y - size.depth / 2 + 1)));
       const free = cells.find((c) => canPlace(state, data, def.id, c.x, c.y, rot));
       if (free) return { ...free, rot };
     }
-    return spotAt(def, project(origin, room.width / 2, room.depth / 2), 0);
+    return spotAt(def, project(origin, size.width / 2, size.depth / 2), 0);
   }
 
   function drop() {
@@ -582,8 +569,8 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
       const next = nextRotation(def, holding.ghost.x, holding.ghost.y, holding.ghost.rot);
       if (!isWallItem(def)) {
         const [w, d] = footprint(def, next.rot);
-        next.x = clamp(next.x, 0, room.width - w);
-        next.y = clamp(next.y, 0, room.depth - d);
+        next.x = clamp(next.x, 0, size.width - w);
+        next.y = clamp(next.y, 0, size.depth - d);
       }
       holding.ghost = next;
     } else if (selected && !actions.rotate(selected)) {
@@ -754,7 +741,7 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
     if (entry.active) return `✓ ${bonus}`;
     if (preview) return `✨ ici : ${bonus}`;
     if (!entry.owned) {
-      const missing = entry.vibe.items.filter((id) => !ownsDecor(state, data, decorDef(data, id)));
+      const missing = entry.vibe.items.filter((id) => !room.owns(state, data, decorDef(data, id)));
       return `🔒 Il te faut : ${missing.map((id) => decorName(data, decorDef(data, id))).join(', ')} · ${bonus}`;
     }
     return `${a} à côté de ${b} · ${bonus}`;
@@ -763,8 +750,8 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
   /** Les combos si l'ombre était posée là. */
   function previewVibes() {
     if (!holding?.ghost || !ghostValid()) return null;
-    const layout = state.studio.layout.filter((e) => e.id !== holding.id).concat([{ id: holding.id, ...holding.ghost }]);
-    return vibeStatus({ ...state, studio: { ...state.studio, layout } }, data);
+    const layout = plan().layout.filter((e) => e.id !== holding.id).concat([{ id: holding.id, ...holding.ghost }]);
+    return vibeStatus({ ...state, [room.plan]: { ...plan(), layout } }, data);
   }
 
   function renderVibe() {
@@ -772,7 +759,7 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
     const active = status.filter((x) => x.active).map((x) => x.vibe.id);
     vibeCount.textContent = `${active.length}/${status.length}`;
     vibeChip.classList.toggle('is-zero', active.length === 0);
-    vibeChip.setAttribute('aria-label', `La vibe du studio : ${active.length} combo${active.length > 1 ? 's' : ''} sur ${status.length}`);
+    vibeChip.setAttribute('aria-label', `La vibe ${labels.of} : ${active.length} combo${active.length > 1 ? 's' : ''} sur ${status.length}`);
     // Un combo vient de s'activer : on le dit.
     if (activeVibes) {
       for (const x of status) {
@@ -803,7 +790,7 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
     const key = rows.map((r) => `${+r.active}${+r.owned}${+r.preview}${+r.losing}`).join('') + related;
     if (key === vibeKey) return;
     vibeKey = key;
-    vibeTitle.textContent = `Vibe du studio (${active.length}/${status.length})`;
+    vibeTitle.textContent = `Vibe ${labels.of} (${active.length}/${status.length})`;
     const rank = (r) => (r.active ? 0 : r.preview ? 1 : r.owned ? 2 : 3);
     vibeList.replaceChildren(...[...rows].sort((a, b) => rank(a) - rank(b)).map((r) => {
       const li = document.createElement('li');
@@ -834,7 +821,7 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
   function refresh(force = false) {
     if (!state) return;
     const key = [
-      state.studio.layout.map((e) => `${e.id}:${e.x},${e.y},${e.rot}`).join('|'),
+      plan().layout.map((e) => `${e.id}:${e.x},${e.y},${e.rot}`).join('|'),
       editing, selected, holding ? `${holding.id}@${spotKey(holding.ghost)}` : '', sprites.size, state.companion,
       Object.keys(state.pets ?? {}).join(','),
     ].join('#');
@@ -854,7 +841,7 @@ export function createStudioView(data, { scene, character, pet, actions, toast, 
       const now = performance.now();
       const dt = Math.min(0.25, (now - (lastStep || now)) / 1000);
       lastStep = now;
-      const visible = game.dataset.scene === 'studio' && !editing && document.visibilityState === 'visible';
+      const visible = game.dataset.scene === room.id && !editing && document.visibilityState === 'visible';
       const still = document.documentElement.dataset.motion === 'reduced';
       const moved = visible && !still && walkers.size > 0 && stepWalkers(dt);
       refresh(moved);

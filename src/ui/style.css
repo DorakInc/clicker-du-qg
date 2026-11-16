@@ -320,17 +320,8 @@ button { font: inherit; color: inherit; }
 .scene-tab:disabled { cursor: not-allowed; opacity: .55; }
 .scene-tab.is-new { animation: blink 1s steps(1) infinite; background: var(--weed); color: var(--ink); }
 
-.scene-serre { background-color: #1d1838; background-image: url("../../assets/images/serre/fond.png"); }
+.scene-serre { background: #1d1838; }
 .scene-light-serre { background: radial-gradient(ellipse at 40% 20%, rgba(255, 95, 210, .14), transparent 60%); }
-.serre-plants { position: absolute; inset: 0; }
-.plant {
-  position: absolute; width: calc(16px * var(--s)); height: calc(24px * var(--s));
-  background: url("../../assets/images/serre/plante.png") no-repeat 0 0 / calc(48px * var(--s)) calc(24px * var(--s));
-  image-rendering: pixelated; transition: background-position 0s;
-}
-.plant[data-stage="1"] { background-position: calc(-16px * var(--s)) 0; }
-.plant[data-stage="2"] { background-position: calc(-32px * var(--s)) 0; }
-.serre-character { position: absolute; left: 73%; top: 50%; }
 
 .deck-serre { background: linear-gradient(#3f7d3a, #2d5c2a); }
 .harvest {

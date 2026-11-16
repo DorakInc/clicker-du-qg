@@ -75,6 +75,12 @@
     ],
     "studioFull": [
       "Plus de place au QG : {name} t'attend dans l'inventaire (✏️)."
+    ],
+    "serreMigrated": [
+      "La serre est maintenant une vraie pièce ! Tes {count} objets y sont déjà installés. Touche ✏️ pour tout réaménager."
+    ],
+    "serreFull": [
+      "Plus de place dans la serre : {name} t'attend dans l'inventaire (✏️)."
     ]
   },
   "fanReactions": {

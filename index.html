@@ -104,8 +104,8 @@
     <main class="stage">
       <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-      <!-- Le QG en vue isométrique (src/ui/studio-view.js) : la pièce derrière le personnage, puis ce qui est devant lui. -->
-      <div id="qg" class="scene scene-studio only-studio">
+      <!-- Le QG en vue isométrique (src/ui/room-view.js) : la pièce derrière le personnage, puis ce qui est devant lui. -->
+      <div id="qg" class="scene scene-room scene-studio only-studio">
         <canvas id="qg-room" class="room-canvas" aria-label="Ton studio" role="img"></canvas>
         <div id="qg-character" class="scene-character"></div>
         <button id="qg-pet" class="scene-pet" type="button" hidden></button>
@@ -135,11 +135,33 @@
         <ul id="studio-vibe" class="studio-vibe"></ul>
       </section>
 
-      <div id="serre" class="scene scene-serre only-serre">
-        <div id="serre-plants" class="serre-plants"></div>
-        <div id="serre-character" class="serre-character"></div>
+      <!-- La serre en vue isométrique (même procédé que le QG, src/ui/room-view.js) -->
+      <div id="serre" class="scene scene-room scene-serre only-serre">
+        <canvas id="serre-room" class="room-canvas" aria-label="Ta serre" role="img"></canvas>
+        <div id="serre-character" class="scene-character"></div>
+        <canvas id="serre-room-front" class="room-canvas room-front" aria-hidden="true"></canvas>
         <div class="scene-light scene-light-serre" aria-hidden="true"></div>
+        <button id="serre-edit" class="studio-edit" type="button" aria-label="Réaménager la serre" aria-pressed="false">✏️</button>
+        <button id="serre-vibe-chip" class="studio-vibe-chip" type="button" aria-label="La vibe de la serre">✨ <span id="serre-vibe-count">0</span></button>
       </div>
+
+      <!-- Mode Édition de la serre : mêmes outils que le studio -->
+      <section id="serre-editor" class="studio-editor only-serre" hidden aria-label="Réaménager la serre">
+        <p id="serre-hint" class="studio-hint" aria-live="polite"></p>
+        <div class="studio-tools">
+          <button id="serre-rotate" class="studio-tool" type="button">↻ Tourner</button>
+          <button id="serre-move" class="studio-tool" type="button">✥ Déplacer</button>
+          <button id="serre-store" class="studio-tool" type="button">📦 Ranger</button>
+          <button id="serre-drop" class="studio-tool studio-tool-ok" type="button">✓ Poser</button>
+          <button id="serre-cancel" class="studio-tool" type="button">✕ Annuler</button>
+          <button id="serre-done" class="studio-tool studio-tool-done" type="button">Terminé</button>
+        </div>
+        <h3 id="serre-inventory-title" class="studio-inventory-title">Inventaire</h3>
+        <div id="serre-inventory" class="studio-inventory"></div>
+        <h3 id="serre-vibe-title" class="studio-inventory-title">Vibe de la serre</h3>
+        <p class="studio-vibe-help">Deux objets qui se touchent (côté, coin, ou au mur juste au-dessus) donnent un petit bonus.</p>
+        <ul id="serre-vibe" class="studio-vibe"></ul>
+      </section>
 
       <div id="carte" class="scene scene-carte only-carte">
         <svg id="carte-links" class="carte-links" viewBox="0 0 160 100" preserveAspectRatio="none" aria-hidden="true"></svg>

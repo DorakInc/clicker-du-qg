@@ -4,15 +4,16 @@
 // Images (volet B), cherchées par id ; un remplaçant s'affiche si le fichier manque :
 //   assets/images/personnages/<id>-sheet.png  feuille de sprites (npm run sprites ; perso créé : sprites.js)
 //   assets/images/qg/fond.png                 le décor du QG (npm run sprites)
-//   assets/images/<sprite>                    objet de la pièce isométrique (data/decor.json, voir studio-view.js)
+//   assets/images/<sprite>                    objet d'une pièce isométrique (decor.json, greenhouse.json ; voir room-view.js)
 //   assets/images/animaux/<idAnimal>.png      animal de compagnie : 2 images de 28 × 20 (npm run sprites)
 
 import {
   beatValue, beatsPerSecond, cannabisPrice, equipmentCost, formatMoney, formatNumber, getModifiers,
   gramsPerSecond, incomePerSecond, isAvailable, isConquered, isOverdosed, isUnlocked, jointCost,
-  netHypePerSecond, petCost, petLevel, producerCost, promoCost, quality, samplesCost, strainCost,
+  netHypePerSecond, petCost, petLevel, producerCost, promoCost, quality, samplesCost, serreRoom, strainCost, studioRoom,
 } from '../game/index.js';
-import { createStudioView } from './studio-view.js';
+import { createRoomView } from './room-view.js';
+import { serreTheme, studioTheme } from './room-themes.js';
 import { characterOf } from '../game/index.js';
 import { sheetUrl } from './sprites.js';
 
@@ -182,6 +183,7 @@ export function createGameView(data, actions, fx) {
   const SHOP_TITLES = { studio: 'La boutique', serre: 'La serre', carte: 'Le monde' };
   function setScene(name) {
     if (name !== 'studio') studio?.stopEditing();
+    if (name !== 'serre') serre?.stopEditing();
     closeSheet();
     game.dataset.scene = name;
     for (const t of document.querySelectorAll('.scene-tab')) t.classList.toggle('is-active', t.dataset.scene === name);
@@ -345,21 +347,21 @@ export function createGameView(data, actions, fx) {
     for (const s of scenes) if (s.clientWidth && s.classList.contains('scene')) s.style.setProperty('--s', s.clientWidth / Number(s.dataset.width || 160));
   }
   const observer = new ResizeObserver(fitScenes);
-  // Le QG : la pièce isométrique et son mode Édition (src/ui/studio-view.js).
-  const studio = createStudioView(data, {
-    scene, character: $('qg-character'), pet: $('qg-pet'), actions: actions.studio, toast: (text) => toast(text),
-    describe: (effect) => describeEffect(effect, data.texts),
-    onPet: () => actions.petPet(),
+  // Le QG et la serre : des pièces isométriques avec leur mode Édition (src/ui/room-view.js).
+  const describe = (effect) => describeEffect(effect, data.texts);
+  const studio = createRoomView(data, {
+    room: studioRoom, scene, canvases: { back: $('qg-room'), front: $('qg-room-front') }, prefix: 'studio',
+    theme: studioTheme, labels: { the: 'le studio', of: 'du studio' },
+    character: $('qg-character'), pet: $('qg-pet'), walkers: true, actions: actions.studio, toast: (text) => toast(text),
+    describe, onPet: () => actions.petPet(),
+  });
+  const serre = createRoomView(data, {
+    room: serreRoom, scene: $('serre'), canvases: { back: $('serre-room'), front: $('serre-room-front') }, prefix: 'serre',
+    theme: serreTheme, labels: { the: 'la serre', of: 'de la serre' },
+    character: $('serre-character'), actions: actions.serre, toast: (text) => toast(text), describe,
   });
   for (const s of scenes) observer.observe(s);
   fitScenes();
-
-  // Emplacements des plants dans la serre (en pixels du décor) : table du fond, puis bac de devant.
-  const PLANT_SLOTS = [
-    ...Array.from({ length: 7 }, (_, i) => [8 + i * 17, 25]),
-    ...Array.from({ length: 6 }, (_, i) => [6 + i * 18, 57]),
-  ];
-  let plantCount = -1;
 
   // ---- La carte : liens entre territoires, marqueurs, liste ----
   const territories = data.map.territories;
@@ -414,6 +416,7 @@ export function createGameView(data, actions, fx) {
   function update(state) {
     lastState = state;
     studio.update(state);
+    serre.update(state);
     const mods = getModifiers(state, data);
     const tier = data.tiers[state.tierIndex];
     const nextTier = data.tiers[state.tierIndex + 1];
@@ -612,23 +615,7 @@ export function createGameView(data, actions, fx) {
       row.owned.textContent = level > 0 ? `niv. ${level}` : '';
       updateCost(row, { cost: strainCost(row.def, level), wallet: state.grams, resource: 'grams', format: formatGrams });
     }
-
-    // Un plant par équipement acheté (jusqu'à remplir la serre), qui pousse en boucle.
-    const equipped = Object.values(state.equipment).reduce((a, b) => a + b, 0);
-    const count = Math.min(PLANT_SLOTS.length, equipped);
-    if (count !== plantCount) {
-      plantCount = count;
-      $('serre-plants').replaceChildren(...PLANT_SLOTS.slice(0, count).map(([x, y]) => {
-        const plant = el('div', 'plant');
-        plant.style.left = `${(x / 160) * 100}%`;
-        plant.style.top = `${y}%`;
-        return plant;
-      }));
-    }
-    const now = performance.now() / 1000;
-    [...$('serre-plants').children].forEach((plant, i) => {
-      plant.dataset.stage = String(Math.floor(now / 6 + i * 1.7) % 3);
-    });
+    // L'équipement et les variétés sont dans la serre isométrique (room-view.js).
   }
 
   function updateCost(row, { cost, wallet, unlocked = true, done = false, resource = 'money', format = formatMoney }) {

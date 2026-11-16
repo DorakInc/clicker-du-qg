@@ -6,7 +6,7 @@ import {
   SAVE_KEY, applyOffline, buyCannabis, buyEquipment, buyPet, buyProducer, buyStrain, buyUpgrade, click,
   createState, deserialize, formatDuration, formatMoney, formatNumber, giveSamples, harvest, playShow,
   moveItem, placeItem, resolveEvent, rollJoint, rotateItem, runPromo, serialize, setCompanion, startCampaign, storeItem,
-  syncStudio, tick, triggerEvent, characterOf,
+  serreRoom, syncStudio, tick, triggerEvent, characterOf,
 } from './game/index.js';
 import { createGameView, showCharacterSelect } from './ui/view.js';
 import { openCreator } from './ui/creator-view.js';
@@ -44,10 +44,13 @@ const MESSAGE_EVENTS = {
   treatPet: '',
   companion: '',
   studioFull: '',
+  serreFull: '',
 };
 
 // Un achat qui peut ajouter un objet dans la pièce du studio.
 const STUDIO_EVENTS = new Set(['buyUpgrade', 'buyProducer', 'adoptPet']);
+// Un achat (ou le déblocage) qui peut ajouter un objet dans la serre.
+const SERRE_EVENTS = new Set(['buyEquipment', 'buyStrain', 'greenhouseUnlock']);
 
 // ---- Stockage (protégé : navigation privée, stockage bloqué...) ----------
 
@@ -198,6 +201,17 @@ function startGame(data, state, { audio, settings, motion, offline }) {
         leaderboard.requestSubmit();
       },
     },
+    // La serre isométrique : mêmes outils, l'autre plan (state.serre).
+    serre: {
+      place: (id, x, y, rot) => serreRoom.placeItem(state, data, id, x, y, rot),
+      move: (id, x, y, rot) => serreRoom.moveItem(state, data, id, x, y, rot),
+      rotate: (id) => serreRoom.rotateItem(state, data, id),
+      store: (id) => serreRoom.storeItem(state, data, id),
+      done() {
+        save();
+        leaderboard.requestSubmit();
+      },
+    },
     petPet: () => audio.play('petPet'),
     reset() {
       const online = storage.get(PROFILE_KEY) ? ' Tu es connecté : la partie en ligne sera aussi remplacée (ton record au classement reste).' : '';
@@ -288,6 +302,7 @@ function startGame(data, state, { audio, settings, motion, offline }) {
     }
     // Un objet tout juste acheté apparaît dans la pièce (ou attend dans l'inventaire si elle est pleine).
     if (events.some((e) => STUDIO_EVENTS.has(e.type))) handle(syncStudio(state, data));
+    if (events.some((e) => SERRE_EVENTS.has(e.type))) handle(serreRoom.sync(state, data));
     if (events.length) view.update(state);
   }
 
@@ -315,13 +330,21 @@ function startGame(data, state, { audio, settings, motion, offline }) {
   const hadPlan = state.studio.layout.length > 0 || state.studio.stored.length > 0;
   const installed = syncStudio(state, data);
   const migrated = installed.filter((e) => e.source !== 'deco');
+  // Pareil pour la serre (si elle est déjà débloquée).
+  const hadSerre = state.serre.layout.length > 0 || state.serre.stored.length > 0;
+  const installedSerre = serreRoom.sync(state, data);
+  const migratedSerre = installedSerre.filter((e) => e.source !== 'deco');
 
   view.showMessage(message(data, 'welcome', { name: character.name }));
   if (!hadPlan && migrated.length) {
     view.showMessage(message(data, 'studioMigrated', { count: migrated.length }));
     save();
   }
-  for (const e of installed) if (e.type === 'studioFull') handle([e]);
+  if (!hadSerre && migratedSerre.length) {
+    view.showMessage(message(data, 'serreMigrated', { count: migratedSerre.length }));
+    save();
+  }
+  for (const e of [...installed, ...installedSerre]) if (e.type === 'studioFull' || e.type === 'serreFull') handle([e]);
   showOffline(offline);
   view.update(state);
 

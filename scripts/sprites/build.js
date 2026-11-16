@@ -7,6 +7,7 @@
 //   docs/gabarits-iso/*.png                    gabarits pour dessiner un objet à la main
 //   assets/images/serre/fond.png              la serre (160 × 100)
 //   assets/images/serre/plante.png            un plant : 3 stades de 16 × 24
+//   assets/images/serre/<id>-iso.png          objet de la serre isométrique (vues côte à côte)
 //   assets/images/carte/fond.png              la carte du monde (160 × 100)
 //   assets/images/animaux/<id>.png            un animal : 2 images de 28 × 20 (la queue bouge)
 //   assets/images/effets/<nom>.png            pièce, note, drapeau (effets visuels)
@@ -26,6 +27,7 @@ import { CARTE_W, CARTE_H, drawCarte } from './carte.js';
 import { PETS, PET_W, PET_H, drawPet } from './animaux.js';
 import { COIN, NOTE, FLAG, ICON, drawCoin, drawNote, drawFlag, drawIcon } from './effets.js';
 import { ISO_OBJECTS, drawIsoObject } from './objets-iso.js';
+import { SERRE_OBJECTS } from './objets-serre.js';
 import { floorTemplate, wallTemplate } from './iso.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -93,6 +95,10 @@ const plants = [0, 1, 2].map((stage) => {
 });
 writePng(path.join(serreDir, 'plante.png'), [plants]);
 
+// Les objets de la serre isométrique (scripts/sprites/objets-serre.js).
+const serreViews = SERRE_OBJECTS.map((object) => drawIsoObject(object));
+SERRE_OBJECTS.forEach((object, i) => writePng(path.join(serreDir, `${object.id}-iso.png`), [serreViews[i]]));
+
 const carteDir = path.join(root, 'assets/images/carte');
 fs.mkdirSync(carteDir, { recursive: true });
 const carte = new Grid(CARTE_W, CARTE_H);
@@ -150,5 +156,6 @@ if (previewIndex !== -1) {
   writePng(process.argv[previewIndex + 1].replace(/\.png$/, '-carte.png'), [[carte]], 5);
   writePng(process.argv[previewIndex + 1].replace(/\.png$/, '-animaux.png'), petFrames, 10);
   isoViews.forEach((views, i) => writePng(process.argv[previewIndex + 1].replace(/\.png$/, `-iso-${ISO_OBJECTS[i].id}.png`), [views], 6));
+  serreViews.forEach((views, i) => writePng(process.argv[previewIndex + 1].replace(/\.png$/, `-serre-${SERRE_OBJECTS[i].id}.png`), [views], 6));
 }
-console.log('Sprites générés dans assets/images/ (personnages, qg + objets isométriques, serre, carte, animaux, effets) et docs/gabarits-iso/');
+console.log('Sprites générés dans assets/images/ (personnages, qg + objets isométriques, serre + objets isométriques, carte, animaux, effets) et docs/gabarits-iso/');

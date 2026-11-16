@@ -5,7 +5,7 @@ import { SAVE_VERSION, createState } from './state.js';
 import { getModifiers } from './modifiers.js';
 import { rawBeatsPerSecond, beatValue } from './economy.js';
 import { addGrams, gramsPerSecond } from './greenhouse.js';
-import { repairStudio } from './studio.js';
+import { repairStudio, serreRoom } from './studio.js';
 import { isCustomId, repairBuild } from './creation.js';
 
 export const SAVE_KEY = 'clicker-du-qg/save';
@@ -46,9 +46,10 @@ export function deserialize(text, data) {
   }
   if (events.pending && !data.events?.list.some((e) => e.id === events.pending)) events.pending = '';
   state.events = events;
-  // Plan du studio : absent dans une vieille sauvegarde (syncStudio installera
+  // Plans du studio et de la serre : absents dans une vieille sauvegarde (sync installera
   // alors les objets déjà possédés), réparé s'il est abîmé.
   state.studio = repairStudio(saved.studio, state, data);
+  state.serre = serreRoom.repair(saved.serre, state, data);
   return state;
 }
 

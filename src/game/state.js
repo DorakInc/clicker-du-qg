@@ -49,6 +49,7 @@ export function createState(data, characterId, now = Date.now(), custom = null) 
     },
     // Éditeur de studio (src/game/studio.js) : le plan de la pièce isométrique
     studio: emptyStudio(), // { layout: [{ id, x, y, rot }], stored: [id] }
+    serre: emptyStudio(), // la serre isométrique, même forme (vide tant que la serre est fermée)
     failOut: false,
     broke: false,
     time: 0, // secondes jouées

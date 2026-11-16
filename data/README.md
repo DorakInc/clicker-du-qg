@@ -13,7 +13,7 @@ Tout le contenu du jeu vit ici, séparé du code. Les volets B (visuel) et C (so
 | `producers.json` | Producteurs automatiques (beats par seconde) | A (chiffres), C (noms, descriptions) |
 | `upgrades.json` | Upgrades du QG, achetés une seule fois | A (chiffres), C (noms, descriptions) |
 | `tiers.json` | Paliers de carrière, débloqués par le record de fans | A (seuils), C (noms) |
-| `greenhouse.json` | La serre : palier de déblocage, équipement ($ → grammes), variétés (grammes → bonus) | A (chiffres), C (noms) |
+| `greenhouse.json` | La serre : palier de déblocage, équipement ($ → grammes), variétés (grammes → bonus), et `decor` : la serre en vue isométrique (voir « La serre isométrique » plus bas) | A (chiffres), B (sprites), C (noms) |
 | `map.json` | La carte : territoires, voisins, hype à atteindre, rivaux, bonus de conquête | A (chiffres), C (noms, descriptions, rivaux) |
 | `texts.json` | Messages du jeu, réactions des fans, libellés des statistiques | Volet C |
 | `sounds.json` | Quel fichier audio joue pour quel événement | Volet C |
@@ -164,6 +164,19 @@ Un producteur ou un animal sans objet dans `decor.json` (ami beatmaker, ingé so
 
 Le plan de chaque joueur est sauvegardé dans `state.studio` (voir `src/game/studio.js`). Retirer un objet de `decor.json` ne casse pas les sauvegardes : il disparaît simplement de la pièce.
 
+### La serre isométrique (`decor` dans `greenhouse.json`)
+
+La serre est une deuxième pièce, faite **exactement comme le studio** : même format (`room`, `items`, `vibe`), même mode Édition (✏️), mêmes règles de placement et de vibe. Différences :
+
+- `source` vaut `equipment` (même id que dans `equipment`), `strain` (même id que dans `strains`) ou `deco`. On possède l'objet dès le premier exemplaire acheté ou le premier niveau de la variété ; racheter ne pose pas un deuxième exemplaire.
+- La pièce reste vide tant que la serre n'est pas débloquée (`unlockTier`) ; au déblocage, la déco et tout ce qui est déjà possédé s'installent tout seuls.
+- Chaque variété est un plant dans son pot ; l'équipement va du pot de yogourt à la ferme lunaire.
+- Les sprites sont dessinés en code dans `scripts/sprites/objets-serre.js` (mêmes aides que le studio) : `npm run sprites` écrit `assets/images/serre/<id>-iso.png`.
+- Les combos de la serre visent surtout ses stats : `grow`, `harvest`, `cannabisPower`, `cannabisDecay`, `cannabisPrice`.
+- Pas d'animaux qui se promènent dans la serre.
+
+Le plan est sauvegardé dans `state.serre`. Le décor de la pièce (vitres, Lune, sol de terre) est dessiné en code par `src/ui/room-themes.js`.
+
 ## Images (volet B)
 
 Le jeu cherche les images à ces emplacements, par `id`. Tant qu'un fichier n'existe pas, un remplaçant texte s'affiche.
@@ -171,11 +184,12 @@ Le jeu cherche les images à ces emplacements, par `id`. Tant qu'un fichier n'ex
 | Élément | Fichier |
 |---|---|
 | Feuille de sprites d'un personnage | `assets/images/personnages/<id>-sheet.png` (ex. `xavier-sheet.png`) |
-| Décor du QG | Dessiné en code par `src/ui/studio-view.js` (murs, sol, tapis). `assets/images/qg/fond.png` n'est plus affiché au studio |
-| Décor de la serre | `assets/images/serre/fond.png` (160 × 100, généré) |
-| Plant de la serre | `assets/images/serre/plante.png` (3 stades de 16 × 24, généré) |
+| Décor du QG | Dessiné en code par `src/ui/room-themes.js` (murs, sol, tapis). `assets/images/qg/fond.png` n'est plus affiché au studio |
+| Décor de la serre | Dessiné en code par `src/ui/room-themes.js` (vitres, Lune, sol de terre). `assets/images/serre/fond.png` n'est plus affiché à la serre |
+| Plant de la serre | `assets/images/serre/plante.png` (3 stades de 16 × 24, généré ; sert au bouton Récolter) |
 | Carte du monde | `assets/images/carte/fond.png` (160 × 100, généré) |
 | Objet de la pièce du studio | `assets/images/<sprite>` donné dans `decor.json` (ex. `qg/canape-iso.png`) |
+| Objet de la serre | `assets/images/<sprite>` donné dans le `decor` de `greenhouse.json` (ex. `serre/tente-culture-iso.png`) |
 | Animal de compagnie | `assets/images/animaux/<id>.png` (2 images de 28 × 20 côte à côte, de profil vers la droite ; généré par `npm run sprites`, provisoire) |
 
 ### Personnages en pixel art
