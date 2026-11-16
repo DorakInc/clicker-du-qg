@@ -1,0 +1,28 @@
+{
+  "messages": {
+    "welcome": ["Bienvenue au QG, {name}. Les beats ne se feront pas tout seuls (enfin, pas encore)."],
+    "offline": ["Pendant ton absence ({duration}), le studio a rapporté {money}."],
+    "cannabisBuy": ["Ça inspire.", "Les idées arrivent.", "Le kick sonne déjà mieux."],
+    "cannabisEmpty": ["Retour sur Terre. Les beats sonnent plates."],
+    "overdose": ["Trop gelé. Tu regardes le plafond au lieu de produire."],
+    "broke": ["T'es à sec. Pu une cenne pour la weed."],
+    "failStart": ["FAIL OUT. Les fans décrochent et le studio tourne au ralenti."],
+    "failEnd": ["Tu remontes la pente. Les fans reviennent."],
+    "tierUp": ["Nouveau palier : {tier} !"],
+    "buyUpgrade": ["{name} installé au QG."]
+  },
+  "fanReactions": {
+    "up": ["« ce beat est malade 🔥 »", "« qui produit ça?? »", "« en boucle depuis ce matin »"],
+    "down": ["« c'était mieux avant »", "« il se passe quoi au QG? »", "« unfollow »"]
+  },
+  "stats": {
+    "click": "puissance de clic",
+    "bps": "production auto",
+    "beatValue": "valeur des beats",
+    "fanGain": "gain de fans",
+    "churn": "perte de fans",
+    "cannabisDecay": "vitesse de redescente",
+    "cannabisPrice": "prix du cannabis",
+    "cannabisPower": "effet du cannabis"
+  }
+}

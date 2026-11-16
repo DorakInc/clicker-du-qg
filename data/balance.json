@@ -1,0 +1,40 @@
+{
+  "startMoney": 15,
+  "baseBeatValue": 1,
+  "clickBeats": 1,
+  "cannabis": {
+    "basePrice": 10,
+    "priceIncomeSeconds": 15,
+    "toleranceGrowth": 1.1,
+    "toleranceDecayPerSecond": 0.03,
+    "highPerPurchase": 35,
+    "maxHigh": 100,
+    "decayPerSecond": 1.5,
+    "qualityPower": 2,
+    "overdose": {
+      "enabled": true,
+      "threshold": 85,
+      "productionPenalty": 0.5
+    }
+  },
+  "fans": {
+    "perBeat": 0.05,
+    "qualityExponent": 2,
+    "churnPerSecond": 0.02,
+    "incomeBonusPerDecade": 0.25
+  },
+  "fail": {
+    "minReferenceFans": 50,
+    "enterRatio": 0.5,
+    "exitRatio": 0.75,
+    "productionMultiplier": 0.4,
+    "churnMultiplier": 2,
+    "referenceDecayPerSecond": 0.07
+  },
+  "offline": {
+    "minSeconds": 10,
+    "maxHours": 8,
+    "efficiency": 0.5
+  },
+  "autosaveSeconds": 10
+}

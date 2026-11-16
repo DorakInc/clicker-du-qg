@@ -1,0 +1,21 @@
+{
+  "effects": {
+    "click": [],
+    "buyProducer": [],
+    "buyUpgrade": [],
+    "cannabisBuy": [],
+    "cannabisEmpty": [],
+    "overdose": [],
+    "broke": [],
+    "failStart": [],
+    "failEnd": [],
+    "tierUp": [],
+    "characterSelect": []
+  },
+  "music": {
+    "normal": null,
+    "cannabis": null,
+    "baisse": null,
+    "echec": null
+  }
+}

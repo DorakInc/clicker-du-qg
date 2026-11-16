@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clicker du QG</title>
+  <link rel="stylesheet" href="src/ui/style.css">
+</head>
+<body>
+  <!-- Écran de sélection de personnage -->
+  <section id="select-screen" class="screen" hidden>
+    <h1 class="title">Clicker du QG</h1>
+    <p class="subtitle">Choisis ton artiste</p>
+    <div id="character-list" class="character-list"></div>
+  </section>
+
+  <!-- Écran de jeu -->
+  <section id="game-screen" class="screen" hidden>
+    <header class="topbar">
+      <div class="stat stat-money"><span class="label">Argent</span><span id="stat-money" class="value"></span></div>
+      <div class="stat"><span class="label">Par seconde</span><span id="stat-income" class="value"></span></div>
+      <div class="stat"><span class="label">Par beat</span><span id="stat-beat-value" class="value"></span></div>
+      <div class="stat"><span class="label">Beats/s</span><span id="stat-bps" class="value"></span></div>
+      <div class="stat"><span class="label">Palier</span><span id="stat-tier" class="value"></span></div>
+    </header>
+
+    <div class="layout">
+      <aside class="panel panel-left">
+        <h2>Fans</h2>
+        <div class="meter meter-fans"><div id="fans-fill" class="meter-fill"></div><div id="fans-ref" class="meter-marker"></div></div>
+        <p class="meter-caption"><span id="fans-count"></span> fans <span id="fans-trend" class="trend"></span></p>
+        <p id="next-tier" class="hint"></p>
+
+        <h2>Cannabis</h2>
+        <div class="meter meter-high"><div id="high-fill" class="meter-fill"></div><div id="overdose-marker" class="meter-marker meter-marker-danger"></div></div>
+        <p class="meter-caption">Qualité des beats : <strong id="quality"></strong></p>
+        <button id="buy-cannabis" class="btn btn-cannabis" type="button">Acheter du cannabis <span id="cannabis-price"></span></button>
+        <p class="hint">Plus tu en prends, plus le prix monte. Trop, et tu ne produis plus rien.</p>
+
+        <div id="status-fail" class="status status-fail" hidden>FAIL OUT : production ralentie, les fans décrochent.</div>
+        <div id="status-overdose" class="status status-overdose" hidden>Trop gelé : production ralentie.</div>
+      </aside>
+
+      <main class="stage">
+        <div id="qg" class="qg">
+          <div id="qg-items" class="qg-items"></div>
+          <div id="qg-character" class="qg-character"></div>
+        </div>
+        <button id="beat-button" class="beat-button" type="button" aria-label="Faire un beat">
+          <span class="beat-button-label">BEAT</span>
+        </button>
+        <ul id="messages" class="messages" aria-live="polite"></ul>
+      </main>
+
+      <aside class="panel panel-right">
+        <div class="tabs" role="tablist">
+          <button class="tab is-active" type="button" data-tab="producers">Producteurs</button>
+          <button class="tab" type="button" data-tab="upgrades">Upgrades du QG</button>
+        </div>
+        <ul id="shop-producers" class="shop" data-panel="producers"></ul>
+        <ul id="shop-upgrades" class="shop" data-panel="upgrades" hidden></ul>
+      </aside>
+    </div>
+
+    <footer class="footer">
+      <span id="save-status"></span>
+      <button id="toggle-sound" class="btn-link" type="button"></button>
+      <button id="reset" class="btn-link" type="button">Nouvelle partie</button>
+    </footer>
+  </section>
+
+  <p id="load-error" class="load-error" hidden>
+    Impossible de charger les données du jeu. Lance le jeu avec un petit serveur local
+    (voir le README) au lieu d'ouvrir index.html directement.
+  </p>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
