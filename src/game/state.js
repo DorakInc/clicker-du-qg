@@ -30,6 +30,13 @@ export function createState(data, characterId, now = Date.now()) {
     hype: {}, // { idTerritoire: hype accumulée }
     promoUses: {}, // { idTerritoire: nombre de campagnes promo }
     sampleUses: {}, // { idTerritoire: nombre de distributions d'échantillons }
+    // Événements à la BitLife (data/events.json)
+    events: {
+      nextAt: 0, // secondes de jeu (state.time) du prochain événement ; 0 = pas encore planifié
+      pending: '', // id d'un événement qui attend la réponse du joueur
+      active: [], // effets temporaires : [{ stat, multiply, until, source }]
+      last: {}, // { idÉvénement: state.time de la dernière fois }
+    },
     failOut: false,
     broke: false,
     time: 0, // secondes jouées

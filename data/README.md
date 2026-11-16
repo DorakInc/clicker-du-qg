@@ -19,6 +19,7 @@ Tout le contenu du jeu vit ici, séparé du code. Les volets B (visuel) et C (so
 | `sounds.json` | Quel fichier audio joue pour quel événement | Volet C |
 | `fx.json` | Réglages des animations : plafonds de particules et de nombres flottants, seuils du « gros beat », durées de tenue (voir `docs/animations/`) | A et B |
 | `online.json` | Classement en ligne : adresse du projet Supabase et **clé publique** (jamais la clé secrète), taille du top, fréquence d'envoi. Vide = classement hors ligne. Voir `supabase/README.md` | A |
+| `events.json` | Événements à la BitLife (police, impôts, beat viral…) : fréquence, conditions, effets, choix et leurs chances. Les textes sont à réécrire par le volet C. Essai direct : `?evenement=<id>` | A (règles), C (textes) |
 
 ## Identifiants (`id`)
 
@@ -92,3 +93,12 @@ Dans `texts.json`, chaque message est une liste : une phrase est tirée au hasar
 - `ticker` : les phrases qui défilent sur la radio « QG FM » en haut de l'écran.
 - `fanHandles` : les noms d'utilisateur des fans dans le fil « QGram ».
 - `fanReactions` : ce que les fans écrivent quand l'audience monte (`up`) ou baisse (`down`).
+
+## Événements (`events.json`)
+
+Un événement tombe toutes les `minGapSeconds` à `maxGapSeconds` secondes de jeu (jamais avant `firstDelaySeconds`, ni avant le palier `minTier`, ni un mauvais événement pendant un fail out). Le même ne revient pas avant `repeatCooldownSeconds`.
+
+- `tone` : `good`, `bad` ou `neutral` (couleur de la carte) ; `weight` : plus il est haut, plus il est fréquent.
+- `requires` : `minTier`, `minMoney`, `minIncome` ($/s), `minBps`, `stash` (zen ou grammes à saisir), `greenhouse`, `map`, `campaign`.
+- Soit `effects` (appliqués tout de suite), soit `choices` : chaque choix a un `label` et des `outcomes` dont les `chance` font 1.
+- Effets : `money` (`multiply`, ou `incomeSeconds` : ± N secondes de revenu), `fans` (`multiply`), `grams` (`multiply`, `add`), `stash` (`share` : part saisie du zen et des grammes), `hype` (`multiply`, campagne en cours), `buff` (`stat`, `multiply`, `seconds` : effet temporaire).

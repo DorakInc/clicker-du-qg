@@ -61,6 +61,7 @@
         <span class="stat"><span class="stat-label">beats/s</span><span id="stat-bps"></span></span>
         <span id="chip-grams" class="stat stat-grams" hidden><span class="stat-label">récolte</span><span id="stat-grams"></span></span>
         <span id="chip-territories" class="stat stat-territories" hidden><span class="stat-label">territoires</span><span id="stat-territories"></span></span>
+        <span id="stat-effects" class="hud-effects"></span>
       </div>
       <div class="ticker" aria-hidden="true">
         <span class="on-air">● QG FM</span>
@@ -241,6 +242,20 @@
       </header>
       <div class="sheet-body">
         <ul id="messages" class="feed"></ul>
+      </div>
+    </section>
+
+    <section id="sheet-event" class="sheet sheet-event" role="dialog" aria-modal="true" aria-labelledby="event-title" aria-describedby="event-text" hidden>
+      <header class="sheet-head">
+        <h2 id="event-title" class="sheet-title"></h2>
+      </header>
+      <div class="sheet-body">
+        <div class="event-card">
+          <span id="event-icon" class="event-icon" aria-hidden="true"></span>
+          <p id="event-text" class="event-text"></p>
+        </div>
+        <ul id="event-changes" class="event-changes"></ul>
+        <div id="event-choices" class="event-choices"></div>
       </div>
     </section>
 

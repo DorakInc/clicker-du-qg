@@ -167,10 +167,16 @@ export function createGameView(data, actions, fx) {
 
   // ---- Panneaux qui montent du bas : boutique, QGram, réglages ----
   let openSheetId = null;
+  let lockedSheet = false; // une question d'événement attend une réponse : on ne ferme pas
   let unread = 0;
-  function openSheet(id) {
-    if (openSheetId === id) return;
+  function openSheet(id, { locked = false } = {}) {
+    if (openSheetId === id) {
+      lockedSheet = locked;
+      return true;
+    }
+    if (lockedSheet) return false;
     closeSheet(true);
+    lockedSheet = locked;
     const sheet = $(id);
     openSheetId = id;
     sheet.hidden = false;
@@ -183,9 +189,11 @@ export function createGameView(data, actions, fx) {
       unread = 0;
       renderBadge('feed-badge', 0);
     }
+    return true;
   }
-  function closeSheet(instant = false) {
-    if (!openSheetId) return;
+  function closeSheet(instant = false, { force = false } = {}) {
+    if (!openSheetId || (lockedSheet && !force)) return;
+    lockedSheet = false;
     const sheet = $(openSheetId);
     openSheetId = null;
     $('sheet-backdrop').hidden = true;
@@ -196,10 +204,14 @@ export function createGameView(data, actions, fx) {
       return;
     }
     sheet.classList.add('is-closing');
-    sheet.addEventListener('animationend', () => {
+    const done = () => {
+      clearTimeout(fallback);
       if (openSheetId !== sheet.id) sheet.hidden = true;
       sheet.classList.remove('is-closing');
-    }, { once: true });
+    };
+    // Si l'animation ne se termine jamais (onglet en arrière-plan), on ferme quand même.
+    const fallback = setTimeout(done, 400);
+    sheet.addEventListener('animationend', done, { once: true });
   }
   $('nav-shop').onclick = () => {
     if (game.dataset.scene === 'classement') setScene('studio');
@@ -395,6 +407,8 @@ export function createGameView(data, actions, fx) {
       row.owned.textContent = bought ? '✓' : '';
       updateCost(row, { cost: row.def.cost, wallet: state.money, unlocked: isUnlocked(row.def, state), done: bought });
     }
+
+    renderEffects(state);
 
     // Badge de la boutique : combien d'articles on peut acheter maintenant.
     const place = game.dataset.scene;
@@ -600,12 +614,73 @@ export function createGameView(data, actions, fx) {
     li.append(document.createTextNode(text));
     list.prepend(li);
     while (list.children.length > 30) list.lastElementChild.remove();
-    // Hors du téléphone ouvert : bulle sur la scène et compteur de messages non lus.
+    // Hors du téléphone ouvert : bulle sur la scène (si rien ne la cache) et compteur de non-lus.
     if (openSheetId !== 'sheet-feed') {
-      toast(text, kind, li.querySelector('.feed-handle')?.textContent ?? '');
+      if (!openSheetId) toast(text, kind, li.querySelector('.feed-handle')?.textContent ?? '');
       unread += 1;
       renderBadge('feed-badge', unread);
     }
+  }
+
+  // ---- Événements à la BitLife : la carte, les choix, le résultat ----
+  const LOWER_IS_BETTER = new Set(['churn', 'cannabisDecay', 'cannabisPrice']);
+  function describeChange(change) {
+    const sign = (n) => (n < 0 ? '−' : '+');
+    switch (change.resource) {
+      case 'money': return `${sign(change.delta)}${formatMoney(Math.abs(change.delta))}`;
+      case 'fans': return `${sign(change.delta)}${formatNumber(Math.abs(change.delta))} abonnés`;
+      case 'grams': return `${sign(change.delta)}${formatGrams(Math.abs(change.delta))}`;
+      case 'high': return 'stash saisi : zen à 0';
+      case 'hype': return `${sign(change.delta)}${formatNumber(Math.abs(change.delta))} hype`;
+      case 'buff': return `${data.texts.stats[change.stat] ?? change.stat} ×${change.multiply} pendant ${change.seconds} s`;
+      default: return '';
+    }
+  }
+  function isGood(change) {
+    if (change.resource === 'buff') return LOWER_IS_BETTER.has(change.stat) ? change.multiply < 1 : change.multiply > 1;
+    return change.delta > 0;
+  }
+
+  /** Affiche un événement : question (avec ses choix), résultat d'un choix, ou événement direct. */
+  function showEvent(gameEvent, onChoose) {
+    const def = data.events?.list.find((e) => e.id === gameEvent.id);
+    if (!def) return;
+    const prompt = gameEvent.type === 'eventPrompt';
+    const sheet = $('sheet-event');
+    sheet.dataset.tone = prompt ? def.tone : gameEvent.tone ?? def.tone;
+    $('event-title').textContent = def.title;
+    $('event-icon').textContent = def.icon;
+    $('event-text').textContent = prompt ? def.text : gameEvent.text ?? def.text;
+    const visible = (c) => describeChange(c) && (c.resource === 'buff' || Math.abs(c.delta) >= 0.5);
+    $('event-changes').replaceChildren(...(gameEvent.changes ?? []).filter(visible).map((c) => {
+      const li = el('li', isGood(c) ? 'is-up' : 'is-down', describeChange(c));
+      return li;
+    }));
+    const buttons = prompt
+      ? def.choices.map((choice, i) => {
+        const button = el('button', 'btn', choice.label);
+        button.type = 'button';
+        button.onclick = () => onChoose(i);
+        return button;
+      })
+      : [Object.assign(el('button', 'btn btn-ok', 'OK'), { type: 'button', onclick: () => closeSheet(false, { force: true }) })];
+    $('event-choices').replaceChildren(...buttons);
+    openSheet('sheet-event', { locked: prompt });
+    buttons[0]?.focus({ preventScroll: true });
+  }
+
+  let effectsKey = '';
+  function renderEffects(state) {
+    const active = state.events?.active.filter((b) => b.until > state.time) ?? [];
+    const key = active.map((b) => `${b.stat}${b.multiply}${Math.ceil(b.until - state.time)}`).join('|');
+    if (key === effectsKey) return;
+    effectsKey = key;
+    $('stat-effects').replaceChildren(...active.map((b) => {
+      const good = LOWER_IS_BETTER.has(b.stat) ? b.multiply < 1 : b.multiply > 1;
+      const chip = el('span', `stat stat-effect${good ? '' : ' is-down'}`);
+      chip.append(el('span', 'stat-label', `${data.events.list.find((e) => e.id === b.source)?.icon ?? '⚡'} ${data.texts.stats[b.stat] ?? b.stat}`), `×${b.multiply} · ${Math.ceil(b.until - state.time)} s`);
+      return chip;
+    }));
   }
 
   function setFansTrend(direction) {
@@ -657,7 +732,7 @@ export function createGameView(data, actions, fx) {
   };
 
   return {
-    update, showMessage, setFansTrend, setSaveStatus, setSoundLabel, announceGreenhouse, announceMap, setScene, openSheet, closeSheet,
+    update, showMessage, showEvent, setFansTrend, setSaveStatus, setSoundLabel, announceGreenhouse, announceMap, setScene, openSheet, closeSheet,
     beatButton, harvestButton, showButton, anchors,
   };
 }

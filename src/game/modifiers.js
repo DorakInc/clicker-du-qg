@@ -39,5 +39,9 @@ export function getModifiers(state, data) {
   for (let i = 0; i <= state.tierIndex && i < data.tiers.length; i += 1) {
     apply(data.tiers[i].effects);
   }
+  // Effets temporaires des événements (panne de courant, beat viral...).
+  for (const buff of state.events?.active ?? []) {
+    if (buff.until > state.time && buff.stat in mods) mods[buff.stat] *= buff.multiply;
+  }
   return mods;
 }

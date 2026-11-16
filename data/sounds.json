@@ -21,7 +21,11 @@
     "samples": [],
     "campaignStart": [],
     "territoryConquered": [],
-    "mapUnlock": []
+    "mapUnlock": [],
+    "event": [],
+    "eventPrompt": [],
+    "eventResult": [],
+    "eventEnd": []
   },
   "music": {
     "normal": null,
