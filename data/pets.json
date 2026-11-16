@@ -1,0 +1,7 @@
+[
+  {"id": "minou", "name": "Sushi de ruelle", "species": "chat", "description": "Noir et blanc, l'air de juger tes beats. Quand il approuve, c'est un hit.", "cost": 1500, "costGrowth": 3, "requiresTier": 1, "effects": [{"stat": "quality", "multiply": 1.04}, {"stat": "cannabisDecay", "multiply": 0.95}]},
+  {"id": "pitou", "name": "POoPoO", "species": "chien", "description": "Un bully féroce et attachant, une lichette sur ton ordi et ta chanson devient instantanément un hit.", "cost": 12000, "costGrowth": 3, "requiresTier": 2, "effects": [{"stat": "quality", "multiply": 1.03}, {"stat": "beatValue", "multiply": 1.06}]},
+  {"id": "bouledogue", "name": "Bouledogue français", "species": "chien", "description": "Ronfle en 4/4. Les acheteurs trouvent ça cute.", "cost": 120000, "costGrowth": 3, "requiresTier": 3, "effects": [{"stat": "beatValue", "multiply": 1.1}]},
+  {"id": "husky", "name": "Husky", "species": "chien", "description": "Hurle sur les refrains. Ça inspire, ça calme, on sait pas trop.", "cost": 1500000, "costGrowth": 3, "requiresTier": 4, "effects": [{"stat": "quality", "multiply": 1.06}, {"stat": "cannabisDecay", "multiply": 0.95}]},
+  {"id": "golden", "name": "Golden retriever", "species": "chien", "description": "Rapporte la balle et les contrats.", "cost": 20000000, "costGrowth": 3, "requiresTier": 5, "effects": [{"stat": "quality", "multiply": 1.05}, {"stat": "beatValue", "multiply": 1.1}]}
+]

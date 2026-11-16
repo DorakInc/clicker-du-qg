@@ -1,4 +1,4 @@
-// Combine les effets du personnage, des upgrades achetés et du palier de carrière
+// Combine les effets du personnage, des upgrades achetés, des animaux et du palier de carrière
 // en une liste de multiplicateurs. Chaque effet de données a la forme
 // { "stat": "<une des STATS>", "multiply": <nombre> }.
 
@@ -14,6 +14,7 @@ export const STATS = [
   'grow', // grammes par seconde de la serre
   'harvest', // grammes par clic de récolte
   'hype', // vitesse de conquête des territoires
+  'quality', // inspiration : multiplie la qualité des beats (animaux de compagnie)
 ];
 
 export function getModifiers(state, data) {
@@ -31,6 +32,10 @@ export function getModifiers(state, data) {
   // Les variétés de la serre ont des niveaux : l'effet s'applique une fois par niveau.
   for (const strain of data.greenhouse?.strains ?? []) {
     apply(strain.effects, state.strains?.[strain.id] ?? 0);
+  }
+  // Animaux de compagnie : l'effet s'applique une fois par niveau d'amitié.
+  for (const pet of data.pets ?? []) {
+    apply(pet.effects, state.pets?.[pet.id] ?? 0);
   }
   for (const t of data.map?.territories ?? []) {
     if (state.conquered?.[t.id]) apply(t.effects);

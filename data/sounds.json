@@ -25,7 +25,10 @@
     "event": [],
     "eventPrompt": [],
     "eventResult": [],
-    "eventEnd": []
+    "eventEnd": [],
+    "adoptPet": [],
+    "treatPet": [],
+    "petPet": []
   },
   "music": {
     "normal": null,

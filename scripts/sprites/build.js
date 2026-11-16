@@ -6,6 +6,7 @@
 //   assets/images/serre/fond.png              la serre (160 × 100)
 //   assets/images/serre/plante.png            un plant : 3 stades de 16 × 24
 //   assets/images/carte/fond.png              la carte du monde (160 × 100)
+//   assets/images/animaux/<id>.png            un animal : 2 images de 28 × 20 (la queue bouge)
 //   assets/images/effets/<nom>.png            pièce, note, drapeau (effets visuels)
 //   assets/images/interface/icone-<taille>.png icône du jeu (192 et 512)
 // Option --preview <fichier.png> : planche agrandie ×6 pour vérifier le rendu.
@@ -19,6 +20,7 @@ import { CHARACTERS } from './characters.js';
 import { QG_W, QG_H, drawQg } from './qg.js';
 import { SERRE_W, SERRE_H, PLANT_W, PLANT_H, drawSerre, drawPlant } from './serre.js';
 import { CARTE_W, CARTE_H, drawCarte } from './carte.js';
+import { PETS, PET_W, PET_H, drawPet } from './animaux.js';
 import { COIN, NOTE, FLAG, ICON, drawCoin, drawNote, drawFlag, drawIcon } from './effets.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -81,6 +83,16 @@ const carte = new Grid(CARTE_W, CARTE_H);
 drawCarte(carte);
 writePng(path.join(carteDir, 'fond.png'), [[carte]]);
 
+const animauxDir = path.join(root, 'assets/images/animaux');
+fs.mkdirSync(animauxDir, { recursive: true });
+const petFrames = PETS.map((pet) => [0, 1].map((frame) => {
+  const g = new Grid(PET_W, PET_H);
+  drawPet(g, pet, frame);
+  g.outline();
+  return g;
+}));
+PETS.forEach((pet, i) => writePng(path.join(animauxDir, `${pet.id}.png`), [petFrames[i]]));
+
 const effetsDir = path.join(root, 'assets/images/effets');
 fs.mkdirSync(effetsDir, { recursive: true });
 for (const [file, size, draw] of [['piece', COIN, drawCoin], ['note', NOTE, drawNote], ['drapeau', FLAG, drawFlag]]) {
@@ -120,5 +132,6 @@ if (previewIndex !== -1) {
   for (let i = 0; i < 6; i += 1) place(plants[(i + 1) % 3], 6 + i * 18, 57);
   writePng(process.argv[previewIndex + 1].replace(/\.png$/, '-serre.png'), [[greenhouse]], 5);
   writePng(process.argv[previewIndex + 1].replace(/\.png$/, '-carte.png'), [[carte]], 5);
+  writePng(process.argv[previewIndex + 1].replace(/\.png$/, '-animaux.png'), petFrames, 10);
 }
-console.log('Sprites générés dans assets/images/ (personnages, qg, serre, carte, effets)');
+console.log('Sprites générés dans assets/images/ (personnages, qg, serre, carte, animaux, effets)');

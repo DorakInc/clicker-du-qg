@@ -120,3 +120,13 @@ test('fx.json : plafonds et seuils des animations', () => {
   assert.ok(coins.max >= 1 && coins.max <= caps.coinsInFlight, 'fx.json : coins.max entre 1 et caps.coinsInFlight');
   assert.ok(data.fx.mergeMs > 0 && data.fx.mergeMsDuringMajor >= data.fx.mergeMs, 'fx.json : mergeMs');
 });
+
+test('pets.json', () => {
+  checkIds(data.pets, 'pets.json');
+  for (const p of data.pets) {
+    for (const key of ['name', 'species', 'description']) assert.equal(typeof p[key], 'string', `pets.json/${p.id}.${key}`);
+    assert.ok(p.cost > 0 && p.costGrowth > 1, `pets.json/${p.id} : cost, costGrowth`);
+    assert.ok(p.requiresTier >= 0 && p.requiresTier < data.tiers.length, `pets.json/${p.id} : requiresTier`);
+    checkEffects(p.effects, `pets.json/${p.id}`);
+  }
+});

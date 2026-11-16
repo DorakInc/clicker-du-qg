@@ -17,6 +17,9 @@ export function createState(data, characterId, now = Date.now()) {
     producers: {}, // { idProducteur: nombre possédé }
     upgrades: {}, // { idUpgrade: true }
     tierIndex: 0,
+    // Animaux de compagnie (data/pets.json)
+    pets: {}, // { idAnimal: niveau d'amitié (1 = adopté) }
+    companion: '', // animal à côté du personnage ('' = aucun)
     // La serre (débloquée à un palier de carrière)
     greenhouseUnlocked: false,
     grams: 0,
