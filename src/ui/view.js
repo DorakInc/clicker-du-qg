@@ -2,9 +2,9 @@
 // l'état directement ; les clics passent par les fonctions `actions` reçues.
 //
 // Images (volet B), cherchées par id ; un remplaçant s'affiche si le fichier manque :
-//   assets/images/personnages/<id>-sheet.png  feuille de sprites (npm run sprites)
+//   assets/images/personnages/<id>-sheet.png  feuille de sprites (npm run sprites ; perso créé : sprites.js)
 //   assets/images/qg/fond.png                 le décor du QG (npm run sprites)
-//   assets/images/qg/<idUpgrade>.png          objet du QG une fois acheté
+//   assets/images/<sprite>                    objet de la pièce isométrique (data/decor.json, voir studio-view.js)
 //   assets/images/animaux/<idAnimal>.png      animal de compagnie : 2 images de 28 × 20 (npm run sprites)
 
 import {
@@ -12,6 +12,9 @@ import {
   gramsPerSecond, incomePerSecond, isAvailable, isConquered, isOverdosed, isUnlocked, jointCost,
   netHypePerSecond, petCost, petLevel, producerCost, promoCost, quality, samplesCost, strainCost,
 } from '../game/index.js';
+import { createStudioView } from './studio-view.js';
+import { characterOf } from '../game/index.js';
+import { sheetUrl } from './sprites.js';
 
 const formatGrams = (grams) => `${formatNumber(grams)} g`;
 
@@ -25,27 +28,18 @@ export function describeEffect({ stat, multiply }, texts) {
   return `${pct > 0 ? '+' : ''}${pct} % ${label}`;
 }
 
-/** Image avec remplaçant si le fichier n'existe pas encore. */
-function imageOr(src, alt, fallback) {
-  const img = document.createElement('img');
-  img.alt = alt;
-  img.src = src;
-  img.addEventListener('error', () => img.replaceWith(fallback), { once: true });
-  return img;
-}
-
 /**
  * Personnage animé (respiration) à partir de sa feuille de sprites :
  * 2 images de 32 × 48 par ligne, ligne 0 = vue de face. La taille vient de
  * la variable CSS --s (héritée du parent si `scale` n'est pas donné).
  */
-function spriteOr(id, name, fallback, scale) {
+function spriteOr(src, name, fallback, scale) {
+  if (!src) return fallback;
   const sprite = document.createElement('div');
   sprite.className = 'sprite';
   sprite.setAttribute('role', 'img');
   sprite.setAttribute('aria-label', name);
   if (scale) sprite.style.setProperty('--s', scale);
-  const src = `assets/images/personnages/${id}-sheet.png`;
   const probe = new Image();
   probe.addEventListener('error', () => sprite.replaceWith(fallback), { once: true });
   probe.src = src;
@@ -72,7 +66,8 @@ function el(tag, className, text) {
 
 // ---- Sélection de personnage --------------------------------------------
 
-export function showCharacterSelect(data, onPick) {
+/** onPick(id) : un personnage préfait ; onCreate() : ouvrir l'écran « Créer mon perso ». */
+export function showCharacterSelect(data, onPick, onCreate) {
   $('game-screen').hidden = true;
   $('select-screen').hidden = false;
   const list = $('character-list');
@@ -82,8 +77,9 @@ export function showCharacterSelect(data, onPick) {
     const card = el('button', 'character-card');
     card.type = 'button';
     card.dataset.character = character.id;
+    if (character.color) card.style.setProperty('--stage', character.color); // couleur de fond de la carte (facultative)
     const portrait = el('div', 'character-portrait');
-    portrait.append(spriteOr(character.id, character.name, document.createTextNode(character.name[0]), 3));
+    portrait.append(spriteOr(sheetUrl(data, character.id), character.name, document.createTextNode(character.name[0]), 3));
     const effects = el('ul', 'character-effects');
     for (const effect of character.effects) effects.append(el('li', '', describeEffect(effect, data.texts)));
     card.append(
@@ -94,6 +90,22 @@ export function showCharacterSelect(data, onPick) {
       effects,
     );
     card.addEventListener('click', () => onPick(character.id));
+    list.append(card);
+  }
+
+  // La carte « Créer mon perso » (src/ui/creator-view.js, data/creation.json).
+  if (onCreate && data.creation) {
+    const card = el('button', 'character-card character-card-create');
+    card.type = 'button';
+    const portrait = el('div', 'character-portrait');
+    portrait.append(el('span', 'character-create-icon', '✨'));
+    card.append(
+      portrait,
+      el('p', 'character-name', 'Ton perso'),
+      el('p', 'character-strength', 'Sur mesure'),
+      el('p', 'character-description', `Ton look, ${data.creation.points} points de talent à placer et un signe particulier tiré au hasard.`),
+    );
+    card.addEventListener('click', () => onCreate());
     list.append(card);
   }
 }
@@ -169,6 +181,7 @@ export function createGameView(data, actions, fx) {
   // Les lieux (barre du bas) : studio, serre, carte, classement — la même partie.
   const SHOP_TITLES = { studio: 'La boutique', serre: 'La serre', carte: 'Le monde' };
   function setScene(name) {
+    if (name !== 'studio') studio?.stopEditing();
     closeSheet();
     game.dataset.scene = name;
     for (const t of document.querySelectorAll('.scene-tab')) t.classList.toggle('is-active', t.dataset.scene === name);
@@ -328,9 +341,16 @@ export function createGameView(data, actions, fx) {
   const scene = $('qg');
   const scenes = [scene, $('serre'), $('carte'), $('classement')];
   function fitScenes() {
-    for (const s of scenes) if (s.clientWidth && s.classList.contains('scene')) s.style.setProperty('--s', s.clientWidth / 160);
+    // Le studio isométrique donne sa propre largeur en pixels (data-width).
+    for (const s of scenes) if (s.clientWidth && s.classList.contains('scene')) s.style.setProperty('--s', s.clientWidth / Number(s.dataset.width || 160));
   }
   const observer = new ResizeObserver(fitScenes);
+  // Le QG : la pièce isométrique et son mode Édition (src/ui/studio-view.js).
+  const studio = createStudioView(data, {
+    scene, character: $('qg-character'), pet: $('qg-pet'), actions: actions.studio, toast: (text) => toast(text),
+    describe: (effect) => describeEffect(effect, data.texts),
+    onPet: () => actions.petPet(),
+  });
   for (const s of scenes) observer.observe(s);
   fitScenes();
 
@@ -393,6 +413,7 @@ export function createGameView(data, actions, fx) {
 
   function update(state) {
     lastState = state;
+    studio.update(state);
     const mods = getModifiers(state, data);
     const tier = data.tiers[state.tierIndex];
     const nextTier = data.tiers[state.tierIndex + 1];
@@ -626,24 +647,17 @@ export function createGameView(data, actions, fx) {
   }
 
   function renderQg(state) {
-    const character = data.characters.find((c) => c.id === state.characterId);
+    const character = characterOf(state, data); // préfait ou créé par le joueur
+    const sheet = sheetUrl(data, character.id);
     for (const id of ['hud-face', 'career-face']) {
       $(id).dataset.character = character.id;
-      $(id).style.backgroundImage = `url("assets/images/personnages/${character.id}-sheet.png")`;
+      $(id).style.backgroundImage = sheet ? `url("${sheet}")` : '';
     }
     $('career-name').textContent = `${character.name} · ${character.strength}`;
     const fallback = el('div', 'qg-character-fallback', character.name[0]);
-    $('qg-character').replaceChildren(spriteOr(character.id, character.name, fallback));
-    $('serre-character').replaceChildren(spriteOr(character.id, character.name, fallback.cloneNode(true)));
-    const items = data.upgrades
-      .filter((u) => state.upgrades[u.id])
-      .map((u) => {
-        const item = el('div', 'sticker');
-        item.title = u.name;
-        item.append(imageOr(`assets/images/qg/${u.id}.png`, u.name, document.createTextNode(u.name)));
-        return item;
-      });
-    $('qg-items').replaceChildren(...items);
+    $('qg-character').replaceChildren(spriteOr(sheet, character.name, fallback));
+    $('serre-character').replaceChildren(spriteOr(sheet, character.name, fallback.cloneNode(true)));
+    // Les objets achetés sont dans la pièce isométrique (studio-view.js).
 
     // L'animal de compagnie, assis à côté du personnage et tourné vers lui.
     const pet = (data.pets ?? []).find((p) => p.id === state.companion && petLevel(state, p.id) > 0);
@@ -795,7 +809,7 @@ export function createGameView(data, actions, fx) {
   };
 
   return {
-    update, showMessage, showEvent, setFansTrend, setSaveStatus, setSoundLabel, announceGreenhouse, announceMap, setScene, openSheet, closeSheet,
+    update, showMessage, showEvent, studio, setFansTrend, setSaveStatus, setSoundLabel, announceGreenhouse, announceMap, setScene, openSheet, closeSheet,
     beatButton, harvestButton, showButton, anchors,
   };
 }

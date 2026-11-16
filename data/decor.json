@@ -1,0 +1,42 @@
+{
+  "room": { "width": 8, "depth": 8 },
+  "items": [
+    { "id": "casque", "source": "upgrade", "icon": "🎧", "sprite": "qg/casque-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 1, "height": 27, "color": "#2c2c32" },
+    { "id": "panneaux-acoustiques", "source": "upgrade", "icon": "🟫", "sprite": "qg/panneaux-acoustiques-iso.png", "footprint": [2, 1], "surface": "mur", "rotations": 1, "height": 18, "elevation": 12, "color": "#7a5c45" },
+    { "id": "lampe-led", "source": "upgrade", "icon": "💜", "sprite": "qg/lampe-led-iso.png", "footprint": [3, 1], "surface": "mur", "rotations": 1, "height": 7, "elevation": 34, "color": "#b04dff" },
+    { "id": "chaise-gamer", "source": "upgrade", "icon": "🪑", "sprite": "qg/chaise-gamer-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 4, "height": 34, "color": "#c8312f" },
+    { "id": "moniteurs", "source": "upgrade", "icon": "🔊", "sprite": "qg/moniteurs-iso.png", "footprint": [2, 1], "surface": "sol", "rotations": 2, "height": 30, "color": "#1e1e22" },
+    { "id": "canape", "source": "upgrade", "icon": "🛋️", "sprite": "qg/canape-iso.png", "footprint": [2, 1], "surface": "sol", "rotations": 2, "height": 20, "color": "#6b4f8a" },
+    { "id": "neons", "source": "upgrade", "icon": "💡", "sprite": "qg/neons-iso.png", "footprint": [2, 1], "surface": "mur", "rotations": 1, "height": 16, "elevation": 20, "color": "#ff5fa2" },
+    { "id": "vaporisateur", "source": "upgrade", "icon": "💨", "sprite": "qg/vaporisateur-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 1, "height": 30, "color": "#8fb996" },
+    { "id": "micro-pro", "source": "upgrade", "icon": "🎙️", "sprite": "qg/micro-pro-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 1, "height": 40, "color": "#c9b26b" },
+    { "id": "cabine", "source": "upgrade", "icon": "🚪", "sprite": "qg/cabine-iso.png", "footprint": [2, 2], "surface": "sol", "rotations": 2, "height": 56, "color": "#8a7a64" },
+    { "id": "console-analogique", "source": "upgrade", "icon": "🎛️", "sprite": "qg/console-analogique-iso.png", "footprint": [2, 1], "surface": "sol", "rotations": 2, "height": 22, "color": "#3d5a99" },
+
+    { "id": "boite-a-rythmes", "source": "producer", "icon": "🥁", "sprite": "qg/boite-a-rythmes-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 2, "height": 18, "color": "#e94f37" },
+    { "id": "clavier-midi", "source": "producer", "icon": "🎹", "sprite": "qg/clavier-midi-iso.png", "footprint": [2, 1], "surface": "sol", "rotations": 2, "height": 17, "color": "#f2f0ea" },
+    { "id": "logiciel-prod", "source": "producer", "icon": "💻", "sprite": "qg/logiciel-prod-iso.png", "footprint": [2, 1], "surface": "sol", "rotations": 2, "height": 42, "color": "#d6d2c8" },
+    { "id": "label-inde", "source": "producer", "icon": "📜", "sprite": "qg/label-inde-iso.png", "footprint": [1, 1], "surface": "mur", "rotations": 1, "height": 16, "elevation": 14, "color": "#f1ece0" },
+    { "id": "ferme-a-beats", "source": "producer", "icon": "🗄️", "sprite": "qg/ferme-a-beats-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 2, "height": 40, "color": "#34343a" },
+    { "id": "tournee-mondiale", "source": "producer", "icon": "🌍", "sprite": "qg/tournee-mondiale-iso.png", "footprint": [2, 1], "surface": "mur", "rotations": 1, "height": 20, "elevation": 12, "color": "#f08a4b" },
+    { "id": "studio-lunaire", "source": "producer", "icon": "🌕", "sprite": "qg/studio-lunaire-iso.png", "footprint": [1, 1], "surface": "mur", "rotations": 1, "height": 16, "elevation": 14, "color": "#1d2647" },
+    { "id": "station-orbitale", "source": "producer", "icon": "🛰️", "sprite": "qg/station-orbitale-iso.png", "footprint": [1, 1], "surface": "mur", "rotations": 1, "height": 16, "elevation": 14, "color": "#e8b93b" },
+
+    { "id": "affiche", "source": "deco", "name": "Affiche « Circles »", "icon": "🖼️", "sprite": "qg/affiche-iso.png", "footprint": [1, 1], "surface": "mur", "rotations": 1, "height": 22, "elevation": 10, "color": "#c8312f" },
+    { "id": "poele-a-bois", "source": "deco", "name": "Poêle à bois", "icon": "🔥", "sprite": "qg/poele-a-bois-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 1, "height": 46, "color": "#3b2f2a" },
+    { "id": "laveuse", "source": "deco", "name": "Laveuse-sécheuse", "icon": "🧺", "sprite": "qg/laveuse-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 2, "height": 26, "color": "#f5f5f2" }
+  ],
+  "vibe": [
+    { "id": "poste-de-mix", "name": "Poste de mix", "icon": "🎛️", "items": ["moniteurs", "console-analogique"], "effects": [{ "stat": "beatValue", "multiply": 1.05 }] },
+    { "id": "coin-chill", "name": "Coin chill", "icon": "🛋️", "items": ["canape", "neons"], "effects": [{ "stat": "cannabisDecay", "multiply": 0.9 }] },
+    { "id": "cabine-pro", "name": "Cabine pro", "icon": "🎙️", "items": ["micro-pro", "cabine"], "effects": [{ "stat": "quality", "multiply": 1.05 }] },
+    { "id": "setup-gamer", "name": "Setup gamer", "icon": "🪑", "items": ["chaise-gamer", "logiciel-prod"], "effects": [{ "stat": "bps", "multiply": 1.05 }] },
+    { "id": "oreille-absolue", "name": "Oreille absolue", "icon": "🎧", "items": ["casque", "chaise-gamer"], "effects": [{ "stat": "click", "multiply": 1.1 }] },
+    { "id": "mur-du-son", "name": "Mur du son", "icon": "🔊", "items": ["panneaux-acoustiques", "moniteurs"], "effects": [{ "stat": "quality", "multiply": 1.03 }] },
+    { "id": "session-vapeur", "name": "Session vapeur", "icon": "💨", "items": ["vaporisateur", "canape"], "effects": [{ "stat": "cannabisPower", "multiply": 1.05 }] },
+    { "id": "beatmaker", "name": "Coin beatmaker", "icon": "🥁", "items": ["boite-a-rythmes", "clavier-midi"], "effects": [{ "stat": "bps", "multiply": 1.05 }] },
+    { "id": "ambiance", "name": "Ambiance de clip", "icon": "💜", "items": ["lampe-led", "neons"], "effects": [{ "stat": "churn", "multiply": 0.95 }] },
+    { "id": "mur-des-trophees", "name": "Mur des trophées", "icon": "🏆", "items": ["studio-lunaire", "station-orbitale"], "effects": [{ "stat": "fanGain", "multiply": 1.05 }] },
+    { "id": "coin-feu", "name": "Coin du feu", "icon": "🔥", "items": ["poele-a-bois", "canape"], "effects": [{ "stat": "churn", "multiply": 0.97 }] }
+  ]
+}

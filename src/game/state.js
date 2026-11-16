@@ -1,11 +1,18 @@
 // L'état complet d'une partie. Tout ce qui est ici est sauvegardé.
 
+import { emptyStudio } from './studio.js';
+
 export const SAVE_VERSION = 1;
 
-export function createState(data, characterId, now = Date.now()) {
+/**
+ * `characterId` : un personnage de data/characters.json, ou un perso créé ('p-…', voir creation.js).
+ * `custom` : pour un perso créé, ses talents, son signe particulier et son nom.
+ */
+export function createState(data, characterId, now = Date.now(), custom = null) {
   return {
     version: SAVE_VERSION,
     characterId,
+    custom, // null, ou { name, skills: { idTalent: points }, trait } (perso créé)
     money: data.balance.startMoney,
     totalEarned: 0,
     totalBeats: 0,
@@ -40,6 +47,8 @@ export function createState(data, characterId, now = Date.now()) {
       active: [], // effets temporaires : [{ stat, multiply, until, source }]
       last: {}, // { idÉvénement: state.time de la dernière fois }
     },
+    // Éditeur de studio (src/game/studio.js) : le plan de la pièce isométrique
+    studio: emptyStudio(), // { layout: [{ id, x, y, rot }], stored: [id] }
     failOut: false,
     broke: false,
     time: 0, // secondes jouées

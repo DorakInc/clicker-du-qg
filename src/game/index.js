@@ -11,3 +11,5 @@ export * from './conquest.js';
 export * from './format.js';
 export * from './events.js';
 export * from './pets.js';
+export * from './studio.js';
+export * from './creation.js';

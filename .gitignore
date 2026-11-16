@@ -32,3 +32,6 @@ build/
 
 # Config locale de Claude Code
 .claude/
+
+# Photos de référence (T-pose, QG) : restent sur l’ordi, jamais dans Git
+references/

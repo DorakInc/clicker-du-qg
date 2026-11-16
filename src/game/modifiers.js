@@ -1,6 +1,9 @@
-// Combine les effets du personnage, des upgrades achetés, des animaux et du palier de carrière
+// Combine les effets du personnage (préfait ou créé), des upgrades achetés, des animaux, de la vibe du studio et du palier de carrière
 // en une liste de multiplicateurs. Chaque effet de données a la forme
 // { "stat": "<une des STATS>", "multiply": <nombre> }.
+
+import { vibeEffects } from './studio.js';
+import { characterOf } from './creation.js';
 
 export const STATS = [
   'click', // beats par clic
@@ -25,7 +28,7 @@ export function getModifiers(state, data) {
     }
   };
 
-  apply(data.characters.find((c) => c.id === state.characterId)?.effects);
+  apply(characterOf(state, data)?.effects); // préfait ou créé par le joueur (creation.js)
   for (const upgrade of data.upgrades) {
     if (state.upgrades[upgrade.id]) apply(upgrade.effects);
   }
@@ -37,6 +40,8 @@ export function getModifiers(state, data) {
   for (const pet of data.pets ?? []) {
     apply(pet.effects, state.pets?.[pet.id] ?? 0);
   }
+  // Vibe du studio : deux objets posés côte à côte (data/decor.json → vibe).
+  apply(vibeEffects(state, data));
   for (const t of data.map?.territories ?? []) {
     if (state.conquered?.[t.id]) apply(t.effects);
   }

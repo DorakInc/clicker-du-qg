@@ -18,6 +18,8 @@ export function loadData() {
     online: read('online'),
     events: read('events'),
     pets: read('pets'),
+    decor: read('decor'),
+    creation: read('creation'),
   };
 }
 

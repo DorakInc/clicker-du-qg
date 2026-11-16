@@ -9,7 +9,7 @@ Tout le contenu du jeu vit ici, séparé du code. Les volets B (visuel) et C (so
 | Fichier | Contenu | Qui y touche |
 |---|---|---|
 | `balance.json` | Tous les réglages d'équilibrage (prix, durées, seuils) | Volet A |
-| `characters.json` | Xavier, Nathan, Émile : nom, force, description, bonus | A (bonus), C (textes) |
+| `characters.json` | Personnages jouables : nom, force, description, bonus, look. Se remplit avec l'atelier (`npm run atelier`). Voir « Personnages » plus bas | A (bonus), B (look), C (textes) |
 | `producers.json` | Producteurs automatiques (beats par seconde) | A (chiffres), C (noms, descriptions) |
 | `upgrades.json` | Upgrades du QG, achetés une seule fois | A (chiffres), C (noms, descriptions) |
 | `tiers.json` | Paliers de carrière, débloqués par le record de fans | A (seuils), C (noms) |
@@ -21,6 +21,8 @@ Tout le contenu du jeu vit ici, séparé du code. Les volets B (visuel) et C (so
 | `online.json` | Classement en ligne : adresse du projet Supabase et **clé publique** (jamais la clé secrète), `topSize` (joueurs affichés dans chacun des deux onglets, Record et Temps réel), `submitEverySeconds` (envoi du score et de la sauvegarde ; les stats « Temps réel » partent avec la sauvegarde), `pollSeconds` (relecture si le direct ne marche pas). Vide = classement hors ligne. Voir `supabase/README.md` | A |
 | `pets.json` | Animaux de compagnie : prix d'adoption, palier, effets par niveau d'amitié | A (chiffres), B (images), C (noms, descriptions) |
 | `events.json` | Événements à la BitLife (police, impôts, beat viral…) : fréquence, conditions, effets, choix et leurs chances. Les textes sont à réécrire par le volet C. Essai direct : `?evenement=<id>` | A (règles), C (textes) |
+| `creation.json` | « Créer mon perso » au début d'une partie : points de talent, talents, signes particuliers, noms au hasard, palettes de couleurs. Voir « Création de perso » plus bas | A (chiffres), C (noms, textes) |
+| `decor.json` | Éditeur de studio (le QG en vue isométrique) : taille de la pièce (`room`) et objets plaçables (`items`). Voir « Objets du studio » plus bas | A (règles), B (sprites, couleurs), C (noms des objets déco) |
 
 ## Identifiants (`id`)
 
@@ -54,6 +56,114 @@ Les **territoires** de la carte (`map.json`) : `x` et `y` placent le marqueur su
 
 `requiresTier` (producteurs, upgrades) est le numéro du palier qui débloque l'élément : 0 pour le premier palier de `tiers.json`, 1 pour le deuxième, etc.
 
+## Personnages (`characters.json`)
+
+Le plus simple : **`npm run atelier`**, puis http://127.0.0.1:8001. L'atelier écrit la fiche, génère la planche et vérifie tout ce qui suit. À la main :
+
+```json
+{
+  "id": "lea",
+  "name": "Léa",
+  "strength": "Zen",
+  "description": "Elle garde la tête froide quand tout le studio décolle.",
+  "effects": [{ "stat": "cannabisDecay", "multiply": 0.6 }],
+  "color": "#9fc2e0",
+  "look": { ... }
+}
+```
+
+| Champ | Sens |
+|---|---|
+| `strength` | Le petit badge jaune de la carte (un ou deux mots). |
+| `effects` | Les pouvoirs : de 1 à 3, une stat différente chacun, `multiply` entre 0,3 et 3 (voir « Effets »). |
+| `color` | **Facultatif.** Couleur de fond de la carte et de la tête dans le classement. |
+| `look` | **Facultatif.** Le dessin en « poupée de papier » (ci-dessous). Sans `look`, le personnage doit être dessiné à la main dans `scripts/sprites/characters.js` (Xavier, Nathan et Émile pour l'instant). |
+
+Le `look` assemble un corps de base et des pièces (`src/poupee/index.js` et `src/poupee/parts/`) :
+
+```json
+"look": {
+  "body": "moyen",
+  "skin": "#f1c6a4",
+  "hair": { "style": "boucles", "color": "#a07a52" },
+  "beard": null,
+  "glasses": "rondes",
+  "hat": { "style": "tuque", "color": "#c94d4d" },
+  "top": { "style": "demi-zip", "color": "#5f6751", "accent": "#cdbf9f" },
+  "bottom": { "style": "jogger", "color": "#1f1f24" },
+  "shoes": { "style": "baskets", "color": "#1b1b1f", "accent": "#2e2e34" },
+  "accessories": ["chaine"]
+}
+```
+
+| Pièce | Choix |
+|---|---|
+| `body` | `mince`, `moyen`, `large` |
+| `hair.style` | `chauve`, `rase`, `courte`, `boucles`, `afro`, `longue`, `tresses`, `queue` |
+| `beard` | `null`, `moustache`, `bouc`, `barbe` (couleur des cheveux) |
+| `glasses` | `null`, `rondes`, `carrees`, `soleil` |
+| `hat` | `null`, ou `{ "style": "casquette" \| "tuque", "color" }` |
+| `top.style` | `tshirt`, `debardeur`, `hoodie`, `bomber`, `demi-zip`, `blouson`, `chemise` ; `accent` = col, logo, cordons ou bandes |
+| `bottom.style` | `jean`, `jogger`, `cargo`, `baggy`, `short`, `jupe` |
+| `shoes.style` | `baskets`, `bottes`, `sabots` ; `accent` = semelle |
+| `accessories` | `chaine`, `casque` (au cou), `sac` (à dos) |
+
+Les couleurs sont en `#rrggbb` ; ombres et reflets sont calculés tout seuls. Après une modification à la main : `npm run sprites` (planche `assets/images/personnages/<id>-sheet.png`), puis `npm test`. Il manque une pièce (une coiffure, un haut) ? On l'ajoute **une fois** dans `src/poupee/parts/`, avec son nom dans la liste exportée (`HAIRS`, `TOPS`…) : elle apparaît dans l'atelier et sert à tout le monde.
+
+Les photos de référence restent dans `references/` (ignoré par Git) ou ailleurs sur l'ordi, et on les prend **avec l'accord de la personne**.
+
+## Création de perso (`creation.json`)
+
+Au début d'une partie, le joueur prend un personnage préfait **ou crée le sien** (src/ui/creator-view.js) : look, talents, signe particulier, nom.
+
+- `points` : les points de talent à répartir ; `maxPerSkill` : le maximum par talent.
+- `skills` : les talents. Chaque point multiplie la `stat` par `1 + perPoint × points` (`perPoint` négatif pour les stats où moins c'est mieux : perte de fans, redescente). Exemple : Mélodie à 5 points = +25 % valeur des beats, comme Xavier.
+- `traits` : les **signes particuliers**. Le jeu en tire `offer` au hasard ; le joueur en prend un ou aucun, et peut relancer `rerolls` fois. Chacun a des `effects` (un bonus et un malus), et `points` facultatif = points de talent en plus.
+- `names` : pour le nom au hasard (`first` + `last`, 16 caractères au plus ; un `first` qui finit par un tiret se colle : « Ti-Béton »).
+- `palettes` : les couleurs proposées au joueur (`skin`, `hair`, `cloth`), 36 au plus chacune.
+
+Le look d'un perso créé est **encodé dans son identifiant** : `p-` suivi de 17 caractères, un par pièce ou couleur (src/poupee/code.js). Le classement en ligne garde cet identifiant, donc tout le monde voit l'avatar des autres, sans rien changer au serveur. ⚠️ Conséquence : dans `palettes` et dans les pièces de `src/poupee/parts/`, on **ajoute à la fin** ; on ne retire rien et on ne change pas l'ordre, sinon les persos déjà créés changent de couleur ou de vêtements.
+
+La sauvegarde garde le reste : `state.custom = { name, skills: { idTalent: points }, trait }`. Une sauvegarde abîmée ou trichée (points en trop, talent inconnu) est réparée au chargement : talents remis à zéro, signe retiré.
+
+## Objets du studio (`decor.json`)
+
+Le QG est une pièce de `room.width` × `room.depth` tuiles, vue en isométrique. Chaque objet de `items` :
+
+```json
+{ "id": "canape", "source": "upgrade", "icon": "🛋️", "footprint": [2, 1], "surface": "sol", "rotations": 2, "height": 14, "color": "#6b4f8a" }
+```
+
+| Champ | Sens |
+|---|---|
+| `id` | Pour `upgrade`, `producer` et `pet` : le **même id** que dans `upgrades.json`, `producers.json` ou `pets.json`. On possède l'objet quand on possède l'amélioration, le producteur ou l'animal. |
+| `source` | `upgrade`, `producer`, `pet` ou `deco`. Un objet `deco` est offert à tout le monde et a besoin d'un `name`. |
+| `surface` | `sol` ou `mur` (les deux murs du fond). Un objet mural a une profondeur de 1. |
+| `footprint` | `[largeur, profondeur]` en tuiles. |
+| `rotations` | 1, 2 ou 4 (au sol). Avec 2, la 2e vue est le miroir de la 1re. |
+| `height`, `color` | Taille (pixels) et couleur de la boîte qui remplace le sprite tant qu'il n'existe pas. |
+| `elevation` | Objet mural : hauteur du bas de l'objet au-dessus du sol (pixels). |
+| `icon` | Emoji affiché dans l'inventaire du mode Édition. |
+| `sprite` | **Facultatif.** Chemin dans `assets/images/` (ex. `qg/canape-iso.png`). Ne l'ajouter qu'une fois l'image créée : `npm test` vérifie que le fichier existe. |
+
+Un producteur ou un animal sans objet dans `decor.json` (ami beatmaker, ingé son…) n'apparaît pas dans la pièce. Les producteurs « pas physiques » (label, tournée, studio lunaire, station orbitale) sont des cadres au mur.
+
+**Sprites isométriques** (tuile de sol = 32 × 16 px) : au sol, l'image est centrée sur l'emprise de l'objet et son bas touche la pointe avant du losange ; largeur conseillée (largeur + profondeur) × 16 px. Les rotations impaires sont le miroir de l'image ; avec `rotations: 4`, l'image contient 2 vues côte à côte (de face, puis de dos). Au mur : large de longueur × 16 px, la vue du mur de droite, puis à côté celle du mur de gauche (facultative : sans elle, le jeu fait le miroir, ce qui retourne un texte) ; l'image suit la pente du mur et son bas est le bout avant du panneau, à la hauteur `elevation`.
+
+**Tous les objets sont dessinés en code** dans `scripts/sprites/objets-iso.js` (aides dans `scripts/sprites/iso.js`) : `npm run sprites` écrit `assets/images/qg/<id>-iso.png`. **Pour dessiner un objet à la main** (Aseprite, Piskel…), partir d'un gabarit de `docs/gabarits-iso/` (le losange de l'emprise ; le point rouge est la pointe avant, où se pose le bas de l'image), enregistrer sous un autre nom, par exemple `qg/canape-main.png`, et mettre ce nom dans `sprite` : `npm run sprites` n'écrase que les fichiers `-iso.png`.
+
+**La vibe** (`vibe` dans `decor.json`) : des combos de deux objets qui donnent un petit bonus quand ils se touchent dans la pièce (par un côté ou un coin ; un objet mural touche ce qui est posé contre son mur, juste en dessous, et les objets muraux voisins, même de l'autre côté du coin).
+
+```json
+{ "id": "poste-de-mix", "name": "Poste de mix", "icon": "🎛️", "items": ["moniteurs", "console-analogique"], "effects": [{ "stat": "beatValue", "multiply": 1.05 }] }
+```
+
+`effects` marche comme partout ailleurs. `npm test` refuse un bonus en dehors de 0,85 à 1,15 : la vibe reste un petit plus, pas une amélioration. Le mode Édition liste les combos, montre en direct ce qu'un déplacement gagne (✨) ou fait perdre (⚠️), et un message part quand un combo s'active.
+
+**Les animaux** adoptés se promènent entre les objets (sauf celui choisi « à côté de moi », qui reste près du personnage). On peut les flatter en touchant la pièce. Ils restent sur place quand les animations sont réduites.
+
+Le plan de chaque joueur est sauvegardé dans `state.studio` (voir `src/game/studio.js`). Retirer un objet de `decor.json` ne casse pas les sauvegardes : il disparaît simplement de la pièce.
+
 ## Images (volet B)
 
 Le jeu cherche les images à ces emplacements, par `id`. Tant qu'un fichier n'existe pas, un remplaçant texte s'affiche.
@@ -61,11 +171,11 @@ Le jeu cherche les images à ces emplacements, par `id`. Tant qu'un fichier n'ex
 | Élément | Fichier |
 |---|---|
 | Feuille de sprites d'un personnage | `assets/images/personnages/<id>-sheet.png` (ex. `xavier-sheet.png`) |
-| Décor du QG | `assets/images/qg/fond.png` (160 × 100, généré par `npm run sprites`) |
+| Décor du QG | Dessiné en code par `src/ui/studio-view.js` (murs, sol, tapis). `assets/images/qg/fond.png` n'est plus affiché au studio |
 | Décor de la serre | `assets/images/serre/fond.png` (160 × 100, généré) |
 | Plant de la serre | `assets/images/serre/plante.png` (3 stades de 16 × 24, généré) |
 | Carte du monde | `assets/images/carte/fond.png` (160 × 100, généré) |
-| Objet du QG (upgrade acheté) | `assets/images/qg/<id>.png` (ex. `casque.png`) |
+| Objet de la pièce du studio | `assets/images/<sprite>` donné dans `decor.json` (ex. `qg/canape-iso.png`) |
 | Animal de compagnie | `assets/images/animaux/<id>.png` (2 images de 28 × 20 côte à côte, de profil vers la droite ; généré par `npm run sprites`, provisoire) |
 
 ### Personnages en pixel art

@@ -5,9 +5,11 @@
 import {
   SAVE_KEY, applyOffline, buyCannabis, buyEquipment, buyPet, buyProducer, buyStrain, buyUpgrade, click,
   createState, deserialize, formatDuration, formatMoney, formatNumber, giveSamples, harvest, playShow,
-  resolveEvent, rollJoint, runPromo, serialize, setCompanion, startCampaign, tick, triggerEvent,
+  moveItem, placeItem, resolveEvent, rollJoint, rotateItem, runPromo, serialize, setCompanion, startCampaign, storeItem,
+  syncStudio, tick, triggerEvent, characterOf,
 } from './game/index.js';
 import { createGameView, showCharacterSelect } from './ui/view.js';
+import { openCreator } from './ui/creator-view.js';
 import { createAudio } from './audio/audio.js';
 import { createFx } from './ui/fx/fx.js';
 import { createMotion, MOTION_MODES } from './ui/fx/motion.js';
@@ -15,7 +17,7 @@ import { PROFILE_KEY, createLeaderboard } from './online/leaderboard.js';
 import { liveFromState } from './online/rules.js';
 import { createLeaderboardView } from './ui/leaderboard-view.js';
 
-const DATA_FILES = ['balance', 'characters', 'producers', 'upgrades', 'tiers', 'texts', 'sounds', 'greenhouse', 'map', 'fx', 'online', 'events', 'pets'];
+const DATA_FILES = ['balance', 'characters', 'producers', 'upgrades', 'tiers', 'texts', 'sounds', 'greenhouse', 'map', 'fx', 'online', 'events', 'pets', 'decor', 'creation'];
 const MOTION_LABELS = { auto: 'Animations : auto', reduced: 'Animations : réduites', full: 'Animations : complètes' };
 const SETTINGS_KEY = 'clicker-du-qg/settings';
 const RENDER_INTERVAL = 1 / 15; // l'affichage est rafraîchi 15 fois par seconde
@@ -41,7 +43,11 @@ const MESSAGE_EVENTS = {
   adoptPet: '',
   treatPet: '',
   companion: '',
+  studioFull: '',
 };
+
+// Un achat qui peut ajouter un objet dans la pièce du studio.
+const STUDIO_EVENTS = new Set(['buyUpgrade', 'buyProducer', 'adoptPet']);
 
 // ---- Stockage (protégé : navigation privée, stockage bloqué...) ----------
 
@@ -111,18 +117,24 @@ async function boot() {
     const offline = applyOffline(saved, data);
     startGame(data, saved, { audio, settings, motion, offline });
   } else {
-    showCharacterSelect(data, (characterId) => {
+    // Un personnage préfait, ou un perso créé (look, talents, signe particulier, nom).
+    const begin = (characterId, custom = null) => {
       audio.unlock();
       audio.play('characterSelect');
-      const state = createState(data, characterId);
+      const state = createState(data, characterId, Date.now(), custom);
       storage.set(SAVE_KEY, serialize(state));
       startGame(data, state, { audio, settings, motion, offline: null });
+    };
+    const choose = () => showCharacterSelect(data, begin, () => {
+      audio.unlock();
+      openCreator(data, { onDone: begin, onCancel: choose });
     });
+    choose();
   }
 }
 
 function startGame(data, state, { audio, settings, motion, offline }) {
-  const character = data.characters.find((c) => c.id === state.characterId);
+  const character = characterOf(state, data);
   let resetting = false;
 
   // Les animations trouvent les éléments de la page par la vue (créée juste après).
@@ -175,6 +187,17 @@ function startGame(data, state, { audio, settings, motion, offline }) {
     buyUpgrade: (id) => handle(buyUpgrade(state, data, id)),
     buyPet: (id) => handle(buyPet(state, data, id)),
     setCompanion: (id) => handle(setCompanion(state, data, id)),
+    // Éditeur de studio : le plan change, et « Terminé » sauvegarde tout de suite (aussi en ligne).
+    studio: {
+      place: (id, x, y, rot) => placeItem(state, data, id, x, y, rot),
+      move: (id, x, y, rot) => moveItem(state, data, id, x, y, rot),
+      rotate: (id) => rotateItem(state, data, id),
+      store: (id) => storeItem(state, data, id),
+      done() {
+        save();
+        leaderboard.requestSubmit();
+      },
+    },
     petPet: () => audio.play('petPet'),
     reset() {
       const online = storage.get(PROFILE_KEY) ? ' Tu es connecté : la partie en ligne sera aussi remplacée (ton record au classement reste).' : '';
@@ -263,6 +286,8 @@ function startGame(data, state, { audio, settings, motion, offline }) {
         if (text) view.showMessage(text, MESSAGE_EVENTS[event.type]);
       }
     }
+    // Un objet tout juste acheté apparaît dans la pièce (ou attend dans l'inventaire si elle est pleine).
+    if (events.some((e) => STUDIO_EVENTS.has(e.type))) handle(syncStudio(state, data));
     if (events.length) view.update(state);
   }
 
@@ -285,7 +310,18 @@ function startGame(data, state, { audio, settings, motion, offline }) {
     }
   }
 
+  // Le studio isométrique : on installe les objets déjà possédés qui n'ont pas encore de place.
+  // Pour une partie commencée avant l'éditeur, c'est tout le QG d'un coup.
+  const hadPlan = state.studio.layout.length > 0 || state.studio.stored.length > 0;
+  const installed = syncStudio(state, data);
+  const migrated = installed.filter((e) => e.source !== 'deco');
+
   view.showMessage(message(data, 'welcome', { name: character.name }));
+  if (!hadPlan && migrated.length) {
+    view.showMessage(message(data, 'studioMigrated', { count: migrated.length }));
+    save();
+  }
+  for (const e of installed) if (e.type === 'studioFull') handle([e]);
   showOffline(offline);
   view.update(state);
 

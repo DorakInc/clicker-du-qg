@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Atelier des personnages</title>
+  <link rel="icon" href="../assets/images/interface/icone-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Silkscreen:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../src/ui/style.css">
+  <link rel="stylesheet" href="../src/ui/fx.css">
+  <link rel="stylesheet" href="personnage.css">
+  <script type="module" src="personnage.js"></script>
+</head>
+<body>
+  <main class="atelier">
+    <header class="atelier-head">
+      <h1 class="logo"><span>Atelier</span><span>des persos</span></h1>
+      <p class="atelier-intro">Photos en T-pose → look en pixel art → pouvoirs et description → enregistré dans le jeu.</p>
+      <label class="field field-inline">
+        <span>Personnage</span>
+        <select id="pick"></select>
+      </label>
+    </header>
+
+    <div class="atelier-grid">
+      <!-- 1. Photos -->
+      <section class="panel panel-photos" aria-labelledby="t-photos">
+        <h2 id="t-photos"><span class="step">1</span> Photos T-pose</h2>
+        <p class="hint">Touche une photo pour prendre sa couleur à la pipette : elle va dans la case de couleur <b>active</b> (encadrée) du look.
+          Les photos restent dans ce navigateur, rien n'est envoyé ni enregistré. Prends-les avec l'accord de la personne.</p>
+        <div class="photos" id="photos"></div>
+        <p class="hint">Photo iPhone en HEIC ? Safari l'ouvre directement. Sinon : <code>sips -s format jpeg photo.heic --out photo.jpg</code></p>
+      </section>
+
+      <!-- 2. Aperçu -->
+      <section class="panel panel-preview" aria-labelledby="t-preview">
+        <h2 id="t-preview"><span class="step">2</span> Aperçu</h2>
+        <div class="views" id="views"></div>
+        <div class="preview-tools">
+          <label class="check"><input type="checkbox" id="breathe" checked> Respiration (86 BPM)</label>
+          <button type="button" class="a-btn" id="download">Télécharger la planche PNG</button>
+        </div>
+        <h3>Dans l'écran de choix</h3>
+        <div class="card-preview" id="card-preview"></div>
+      </section>
+
+      <!-- 3. Look -->
+      <section class="panel panel-look" aria-labelledby="t-look">
+        <h2 id="t-look"><span class="step">3</span> Look</h2>
+        <label class="check check-uselook" id="uselook-row" hidden>
+          <input type="checkbox" id="uselook"> Remplacer le dessin à la main par la poupée de papier
+        </label>
+        <div id="look-fields" class="look-fields"></div>
+        <div class="row">
+          <button type="button" class="a-btn" id="random">🎲 Look au hasard</button>
+          <button type="button" class="a-btn" id="reset-look">Look de base</button>
+        </div>
+      </section>
+
+      <!-- 4. Fiche -->
+      <section class="panel panel-sheet" aria-labelledby="t-sheet">
+        <h2 id="t-sheet"><span class="step">4</span> Pouvoirs et description</h2>
+        <div class="two">
+          <label class="field"><span>Nom</span><input id="name" maxlength="20" autocomplete="off" placeholder="ex. Léa"></label>
+          <label class="field"><span>Identifiant</span><input id="id" maxlength="30" autocomplete="off" spellcheck="false" placeholder="lea"></label>
+        </div>
+        <label class="field"><span>Force (le petit badge jaune)</span><input id="strength" maxlength="16" autocomplete="off" placeholder="ex. Mélodies"></label>
+        <label class="field"><span>Description <small id="desc-count"></small></span>
+          <textarea id="description" rows="3" maxlength="160" placeholder="Une phrase qui donne envie de le choisir."></textarea></label>
+        <label class="field field-inline"><span>Couleur de la carte</span><input type="color" id="card-color"></label>
+
+        <h3>Pouvoirs spéciaux</h3>
+        <p class="hint">Chaque pouvoir multiplie une statistique du jeu. Départ rapide avec un archétype :</p>
+        <div class="archetypes" id="archetypes"></div>
+        <ul class="effects" id="effects"></ul>
+        <button type="button" class="a-btn" id="add-effect">+ Ajouter un pouvoir</button>
+
+        <div class="balance" id="balance"></div>
+      </section>
+    </div>
+
+    <footer class="atelier-foot panel">
+      <ul class="errors" id="errors" aria-live="polite"></ul>
+      <div class="row">
+        <button type="button" class="a-btn a-btn-main" id="save">Enregistrer dans le jeu</button>
+        <button type="button" class="a-btn" id="copy">Copier la fiche JSON</button>
+        <a class="a-btn" href="../index.html" target="_blank" rel="noopener">Ouvrir le jeu ↗</a>
+      </div>
+      <p class="status" id="status" aria-live="polite"></p>
+    </footer>
+  </main>
+</body>
+</html>

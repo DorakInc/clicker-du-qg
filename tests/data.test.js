@@ -5,6 +5,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { STATS } from '../src/game/index.js';
 import { loadData } from './helpers.js';
+import fs from 'node:fs';
+import { validateCharacter } from '../scripts/personnages.js';
+import { CHARACTERS as HAND_DRAWN } from '../scripts/sprites/characters.js';
 
 const data = loadData();
 
@@ -27,6 +30,17 @@ test('characters.json', () => {
   for (const c of data.characters) {
     for (const key of ['name', 'strength', 'description']) assert.equal(typeof c[key], 'string', `${c.id}.${key}`);
     checkEffects(c.effects, `characters.json/${c.id}`);
+    assert.deepEqual(validateCharacter(c, STATS), [], `characters.json/${c.id}`);
+    if (c.color !== undefined) assert.match(c.color, /^#[0-9a-f]{6}$/i, `${c.id}.color`);
+  }
+});
+
+test('characters.json : chaque personnage a un dessin et une planche générée', () => {
+  const sprites = JSON.parse(fs.readFileSync(new URL('../assets/images/personnages/sprites.json', import.meta.url), 'utf8'));
+  for (const c of data.characters) {
+    assert.ok(c.look || HAND_DRAWN.some((h) => h.id === c.id), `${c.id} : ni fiche "look" ni dessin à la main (scripts/sprites/characters.js)`);
+    assert.equal(sprites.sheets[c.id], `${c.id}-sheet.png`, `${c.id} : planche absente de sprites.json, lancer npm run sprites`);
+    assert.ok(fs.existsSync(new URL(`../assets/images/personnages/${c.id}-sheet.png`, import.meta.url)), `${c.id}-sheet.png manquant : lancer npm run sprites`);
   }
 });
 
