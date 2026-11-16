@@ -141,17 +141,104 @@ export function createGameView(data, actions, fx) {
   }
   for (const tab of document.querySelectorAll('.tab')) tab.onclick = () => selectTab(tab.dataset.tab);
 
-  // Studio ou serre : deux scènes, deux boutiques, la même partie.
+  // Les lieux (barre du bas) : studio, serre, carte, classement — la même partie.
+  const SHOP_TITLES = { studio: 'La boutique', serre: 'La serre', carte: 'Le monde' };
   function setScene(name) {
+    closeSheet();
     game.dataset.scene = name;
     for (const t of document.querySelectorAll('.scene-tab')) t.classList.toggle('is-active', t.dataset.scene === name);
     $(`tab-${name}`)?.classList.remove('is-new');
     if (name === 'studio' || name === 'serre') selectTab(name === 'serre' ? 'equipment' : 'producers');
+    $('nav-shop-label').textContent = name === 'carte' ? 'Monde' : 'Boutique';
+    $('nav-shop').querySelector('.nav-icon').textContent = name === 'carte' ? '🌍' : '🛒';
+    $('sheet-shop-title').textContent = SHOP_TITLES[name] ?? SHOP_TITLES.studio;
     fitScenes();
     if (lastState) update(lastState);
+    window.scrollTo({ top: 0 });
     fx.sceneShown(name);
   }
-  for (const t of document.querySelectorAll('.scene-tab')) t.onclick = () => setScene(t.dataset.scene);
+  for (const t of document.querySelectorAll('.scene-tab')) {
+    t.onclick = () => {
+      // Lieu verrouillé : on dit quand il s'ouvre, au lieu d'un bouton mort.
+      if (t.getAttribute('aria-disabled') === 'true') return toast(t.dataset.lockedText ?? 'Pas encore débloqué.');
+      return setScene(t.dataset.scene);
+    };
+  }
+
+  // ---- Panneaux qui montent du bas : boutique, QGram, réglages ----
+  let openSheetId = null;
+  let unread = 0;
+  function openSheet(id) {
+    if (openSheetId === id) return;
+    closeSheet(true);
+    const sheet = $(id);
+    openSheetId = id;
+    sheet.hidden = false;
+    sheet.classList.remove('is-closing');
+    sheet.classList.add('is-open');
+    $('sheet-backdrop').hidden = false;
+    document.body.classList.add('has-sheet');
+    sheet.querySelector('.sheet-close')?.focus({ preventScroll: true });
+    if (id === 'sheet-feed') {
+      unread = 0;
+      renderBadge('feed-badge', 0);
+    }
+  }
+  function closeSheet(instant = false) {
+    if (!openSheetId) return;
+    const sheet = $(openSheetId);
+    openSheetId = null;
+    $('sheet-backdrop').hidden = true;
+    document.body.classList.remove('has-sheet');
+    sheet.classList.remove('is-open');
+    if (instant || fx.motion.reduced) {
+      sheet.hidden = true;
+      return;
+    }
+    sheet.classList.add('is-closing');
+    sheet.addEventListener('animationend', () => {
+      if (openSheetId !== sheet.id) sheet.hidden = true;
+      sheet.classList.remove('is-closing');
+    }, { once: true });
+  }
+  $('nav-shop').onclick = () => {
+    if (game.dataset.scene === 'classement') setScene('studio');
+    openSheet('sheet-shop');
+  };
+  $('open-feed').onclick = () => openSheet('sheet-feed');
+  $('open-settings').onclick = () => openSheet('sheet-settings');
+  $('hud-avatar').onclick = () => openSheet('sheet-settings');
+  $('sheet-backdrop').onclick = () => closeSheet();
+  for (const button of document.querySelectorAll('[data-close]')) button.onclick = () => closeSheet();
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeSheet();
+  });
+
+  function renderBadge(id, count) {
+    const badge = $(id);
+    badge.hidden = count <= 0;
+    badge.textContent = count > 9 ? '9+' : String(count);
+  }
+
+  // Bulle de notification en haut de la scène (le dernier message QGram).
+  let toastTimer = null;
+  function toast(text, kind = '', handle = '') {
+    const node = $('toast');
+    node.className = `toast ${kind}`;
+    node.replaceChildren();
+    if (handle) node.append(el('span', 'feed-handle', handle));
+    node.append(document.createTextNode(text));
+    node.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      if (fx.motion.reduced) {
+        node.hidden = true;
+        return;
+      }
+      node.classList.add('is-leaving');
+      node.addEventListener('animationend', () => { node.hidden = true; }, { once: true });
+    }, 3200);
+  }
 
   // Cibles de clic : l'enfoncement (animation 01) part au pointerdown, plus rapide au doigt ;
   // au clavier (event.detail = 0), il part avec le clic. La logique reste sur `click`.
@@ -179,7 +266,7 @@ export function createGameView(data, actions, fx) {
   $('toggle-sound').onclick = () => actions.toggleSound();
 
   const { maxHigh, overdose } = data.balance.cannabis;
-  $('overdose-marker').style.left = `${(overdose.threshold / maxHigh) * 100}%`;
+  $('overdose-marker').style.setProperty('--at', `${(overdose.threshold / maxHigh) * 100}%`);
   $('overdose-marker').hidden = !overdose.enabled;
 
   // Les scènes sont dessinées en 160 × 100 pixels : --s = taille d'un pixel à l'écran.
@@ -282,7 +369,7 @@ export function createGameView(data, actions, fx) {
       ? `Prochain palier : ${nextTier.name} à ${formatNumber(nextTier.fansRequired)} abonnés`
       : 'Palier maximum. Légende du sous-sol.';
 
-    $('high-fill').style.width = `${(state.high / maxHigh) * 100}%`;
+    $('high-fill').style.setProperty('--pct', `${(state.high / maxHigh) * 100}%`);
     $('quality').textContent = `beats ×${quality(state, data, mods).toFixed(2)}`;
     const price = cannabisPrice(state, data, mods);
     $('cannabis-price').textContent = formatMoney(price);
@@ -309,6 +396,15 @@ export function createGameView(data, actions, fx) {
       updateCost(row, { cost: row.def.cost, wallet: state.money, unlocked: isUnlocked(row.def, state), done: bought });
     }
 
+    // Badge de la boutique : combien d'articles on peut acheter maintenant.
+    const place = game.dataset.scene;
+    const shopRows = place === 'serre' ? [...equipmentRows, ...strainRows] : [...producerRows, ...upgradeRows];
+    const affordable = place === 'carte' ? 0 : shopRows.filter((row) => !row.button.disabled && row.button.getAttribute('aria-disabled') !== 'true').length;
+    if (affordable !== shopBadge) {
+      shopBadge = affordable;
+      renderBadge('shop-badge', affordable);
+    }
+
     // Le QG n'est reconstruit que quand les upgrades achetés changent.
     const key = `${state.characterId}|${Object.keys(state.upgrades).join(',')}`;
     if (key !== qgKey) {
@@ -317,13 +413,17 @@ export function createGameView(data, actions, fx) {
     }
   }
 
-  /** Onglet de scène verrouillé tant que le palier n'est pas atteint. */
+  /** Lieu verrouillé tant que le palier n'est pas atteint : cadenas, et un message au toucher. */
   function updateSceneTab(id, unlocked, icon, label, tierIndex) {
     const tab = $(id);
     if (tab.dataset.unlocked === String(unlocked)) return;
     tab.dataset.unlocked = String(unlocked);
-    tab.disabled = !unlocked;
-    tab.textContent = unlocked ? `${icon} ${label}` : `🔒 ${label} (palier « ${data.tiers[tierIndex].name} »)`;
+    tab.classList.toggle('is-locked', !unlocked);
+    if (unlocked) tab.removeAttribute('aria-disabled');
+    else tab.setAttribute('aria-disabled', 'true');
+    tab.querySelector('.nav-icon').textContent = unlocked ? icon : '🔒';
+    tab.dataset.lockedText = `${label} : se débloque au palier « ${data.tiers[tierIndex].name} ».`;
+    tab.setAttribute('aria-label', unlocked ? label : tab.dataset.lockedText);
   }
 
   function updateMap(state, mods) {
@@ -460,6 +560,11 @@ export function createGameView(data, actions, fx) {
 
   function renderQg(state) {
     const character = data.characters.find((c) => c.id === state.characterId);
+    for (const id of ['hud-face', 'career-face']) {
+      $(id).dataset.character = character.id;
+      $(id).style.backgroundImage = `url("assets/images/personnages/${character.id}-sheet.png")`;
+    }
+    $('career-name').textContent = `${character.name} · ${character.strength}`;
     const fallback = el('div', 'qg-character-fallback', character.name[0]);
     $('qg-character').replaceChildren(spriteOr(character.id, character.name, fallback));
     $('serre-character').replaceChildren(spriteOr(character.id, character.name, fallback.cloneNode(true)));
@@ -494,7 +599,13 @@ export function createGameView(data, actions, fx) {
     if (kind === 'fan') li.append(el('span', 'feed-handle', pick(data.texts.fanHandles ?? ['@fan'])));
     li.append(document.createTextNode(text));
     list.prepend(li);
-    while (list.children.length > 5) list.lastElementChild.remove();
+    while (list.children.length > 30) list.lastElementChild.remove();
+    // Hors du téléphone ouvert : bulle sur la scène et compteur de messages non lus.
+    if (openSheetId !== 'sheet-feed') {
+      toast(text, kind, li.querySelector('.feed-handle')?.textContent ?? '');
+      unread += 1;
+      renderBadge('feed-badge', unread);
+    }
   }
 
   function setFansTrend(direction) {
@@ -514,6 +625,8 @@ export function createGameView(data, actions, fx) {
   function announceGreenhouse() {
     $('tab-serre').classList.add('is-new');
   }
+
+  let shopBadge = -1;
 
   function announceMap() {
     $('tab-carte').classList.add('is-new');
@@ -544,7 +657,7 @@ export function createGameView(data, actions, fx) {
   };
 
   return {
-    update, showMessage, setFansTrend, setSaveStatus, setSoundLabel, announceGreenhouse, announceMap, setScene,
+    update, showMessage, setFansTrend, setSaveStatus, setSoundLabel, announceGreenhouse, announceMap, setScene, closeSheet,
     beatButton, harvestButton, showButton, anchors,
   };
 }

@@ -1,0 +1,16 @@
+{
+  "name": "Clicker du QG",
+  "short_name": "Clicker QG",
+  "description": "Fais des beats au QG, gère le cash, le stash et les fans pour ne pas fail out.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1b1426",
+  "theme_color": "#1b1426",
+  "icons": [
+    { "src": "assets/images/interface/icone-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/images/interface/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

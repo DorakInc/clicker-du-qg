@@ -2,7 +2,15 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1b1426">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Clicker du QG">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/images/interface/icone-192.png">
+  <link rel="apple-touch-icon" href="assets/images/interface/icone-192.png">
   <title>Clicker du QG</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,6 +18,7 @@
   <link rel="stylesheet" href="src/ui/style.css">
   <link rel="stylesheet" href="src/ui/fx.css">
   <link rel="stylesheet" href="src/ui/classement.css">
+  <link rel="stylesheet" href="src/ui/app.css">
 </head>
 <body>
   <!-- Écran de sélection de personnage -->
@@ -22,161 +31,188 @@
     <p class="select-foot">aucun beat n'a été maltraité pendant la production de ce jeu</p>
   </section>
 
-  <!-- Écran de jeu -->
+  <!-- Écran de jeu : pensé pour le téléphone (une colonne), centré sur ordinateur -->
   <section id="game-screen" class="game" data-scene="studio" hidden>
-    <header class="radio">
-      <p class="logo"><span>Clicker</span><span>du QG</span></p>
+    <!-- Barre du haut : personnage, cash, abonnés, QGram, réglages -->
+    <header class="hud">
+      <div class="hud-row">
+        <button id="hud-avatar" class="hud-avatar" type="button" aria-label="Ton QG et les réglages">
+          <span id="hud-face" class="board-face"></span>
+        </button>
+        <div class="hud-cash">
+          <span class="hud-label">le cash</span>
+          <span id="stat-money" class="money-value"></span>
+          <span class="hud-sub">+<span id="stat-income"></span>/s</span>
+        </div>
+        <div class="hud-fans" title="Tes abonnés : la vraie barre de vie">
+          <span class="hud-label">abonnés <span id="fans-trend" class="trend"></span></span>
+          <strong id="fans-count"></strong>
+        </div>
+        <button id="open-feed" class="hud-icon" type="button" aria-label="QGram : tes messages">📱<span id="feed-badge" class="badge" hidden></span></button>
+        <button id="open-settings" class="hud-icon" type="button" aria-label="Réglages">⚙️</button>
+      </div>
+      <div class="hud-career">
+        <span class="chip-tier"><span id="stat-tier"></span></span>
+        <div class="meter meter-fans" title="Vibe : sous le trait, c'est le fail out"><div id="fans-fill" class="meter-fill"></div><div id="fans-ref" class="meter-mark" title="Sous ce seuil : fail out"></div></div>
+        <button id="chip-rank" class="chip-rank" type="button" hidden aria-label="Ton rang au classement"><span id="stat-rank"></span></button>
+      </div>
+      <div class="hud-stats">
+        <span class="stat"><span class="stat-label">par beat</span><span id="stat-beat-value"></span></span>
+        <span class="stat"><span class="stat-label">beats/s</span><span id="stat-bps"></span></span>
+        <span id="chip-grams" class="stat stat-grams" hidden><span class="stat-label">récolte</span><span id="stat-grams"></span></span>
+        <span id="chip-territories" class="stat stat-territories" hidden><span class="stat-label">territoires</span><span id="stat-territories"></span></span>
+      </div>
       <div class="ticker" aria-hidden="true">
         <span class="on-air">● QG FM</span>
         <div class="ticker-window"><span id="ticker-text" class="ticker-text"></span></div>
       </div>
-      <div class="money">
-        <span class="money-label">le cash</span>
-        <span id="stat-money" class="money-value"></span>
-      </div>
     </header>
 
-    <div class="chips">
-      <div class="chip"><span class="chip-label">par seconde</span><span id="stat-income" class="chip-value"></span></div>
-      <div class="chip"><span class="chip-label">par beat</span><span id="stat-beat-value" class="chip-value"></span></div>
-      <div class="chip"><span class="chip-label">beats/s</span><span id="stat-bps" class="chip-value"></span></div>
-      <div class="chip chip-tier"><span class="chip-label">palier</span><span id="stat-tier" class="chip-value"></span></div>
-      <div id="chip-grams" class="chip chip-grams" hidden><span class="chip-label">la récolte</span><span id="stat-grams" class="chip-value"></span></div>
-      <div id="chip-territories" class="chip chip-territories" hidden><span class="chip-label">territoires</span><span id="stat-territories" class="chip-value"></span></div>
-      <button id="chip-rank" class="chip chip-rank" type="button" hidden><span class="chip-label">classement</span><span id="stat-rank" class="chip-value"></span></button>
-    </div>
+    <main class="stage">
+      <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-    <div class="layout">
-      <main class="col-main">
-        <div class="scene-tabs" role="tablist">
-          <button class="scene-tab is-active" type="button" data-scene="studio">🎧 Le studio</button>
-          <button id="tab-serre" class="scene-tab" type="button" data-scene="serre" disabled>🔒 La serre</button>
-          <button id="tab-carte" class="scene-tab" type="button" data-scene="carte" disabled>🔒 La carte</button>
-          <button id="tab-classement" class="scene-tab scene-tab-classement" type="button" data-scene="classement">🏆 Classement</button>
+      <div id="qg" class="scene only-studio">
+        <div id="qg-items" class="scene-items"></div>
+        <div id="qg-character" class="scene-character"></div>
+        <div class="smoke" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="scene-light" aria-hidden="true"></div>
+        <div id="status-fail" class="stamp" hidden>FAIL OUT</div>
+      </div>
+
+      <div id="serre" class="scene scene-serre only-serre">
+        <div id="serre-plants" class="serre-plants"></div>
+        <div id="serre-character" class="serre-character"></div>
+        <div class="scene-light scene-light-serre" aria-hidden="true"></div>
+      </div>
+
+      <div id="carte" class="scene scene-carte only-carte">
+        <svg id="carte-links" class="carte-links" viewBox="0 0 160 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+        <div id="carte-markers" class="carte-markers"></div>
+      </div>
+
+      <div class="alerts">
+        <p id="status-overdose" class="alert" hidden>Trop gelé. La prod ralentit.</p>
+        <p id="status-fail-text" class="alert alert-danger" hidden>Fail out : la prod ralentit et les abonnés décrochent.</p>
+      </div>
+
+      <!-- La console : le gros bouton au milieu, le zen à gauche, le stash à droite -->
+      <div class="console">
+        <div class="console-side console-zen" title="Meilleurs beats, mais le prix monte à chaque fois. Trop, et tu fixes le plafond.">
+          <span class="console-label">zen</span>
+          <div class="meter meter-high meter-vertical"><div id="high-fill" class="meter-fill"></div><div id="overdose-marker" class="meter-mark meter-mark-danger" title="Au-delà : trop gelé"></div></div>
+          <strong id="quality" class="console-value"></strong>
         </div>
 
-        <div id="qg" class="scene only-studio">
-          <div id="qg-items" class="scene-items"></div>
-          <div id="qg-character" class="scene-character"></div>
-          <div class="smoke" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-          <div class="scene-light" aria-hidden="true"></div>
-          <div id="status-fail" class="stamp" hidden>FAIL OUT</div>
-        </div>
-
-        <div id="serre" class="scene scene-serre only-serre">
-          <div id="serre-plants" class="serre-plants"></div>
-          <div id="serre-character" class="serre-character"></div>
-          <div class="scene-light scene-light-serre" aria-hidden="true"></div>
-        </div>
-
-        <div id="carte" class="scene scene-carte only-carte">
-          <svg id="carte-links" class="carte-links" viewBox="0 0 160 100" preserveAspectRatio="none" aria-hidden="true"></svg>
-          <div id="carte-markers" class="carte-markers"></div>
-        </div>
-
-        <div class="deck only-studio">
-          <button id="beat-button" class="vinyl" type="button" aria-label="Faire un beat">
-            <span class="vinyl-disc"><span class="vinyl-label">BEAT</span></span>
-          </button>
-          <div class="tonearm" aria-hidden="true"></div>
-          <p class="deck-hint">clique sur le vinyle</p>
-        </div>
-
-        <div class="deck deck-serre only-serre">
-          <button id="harvest-button" class="harvest" type="button" aria-label="Récolter">
-            <span class="harvest-plant"></span>
-            <span class="harvest-label">RÉCOLTER</span>
-          </button>
-          <p class="deck-hint">clique pour récolter</p>
-        </div>
-
-        <section id="classement" class="board only-classement" aria-labelledby="board-title">
-          <header class="board-head">
-            <h2 id="board-title" class="board-title"><span>Le top</span><span>du QG</span></h2>
-            <p id="board-live" class="board-live"></p>
-          </header>
-          <p id="board-message" class="board-message" hidden></p>
-          <ol id="board-list" class="board-list"></ol>
-          <div id="board-mine" class="board-mine" hidden></div>
-          <p class="board-foot">Classé selon l'argent total gagné pendant ta meilleure partie.</p>
-        </section>
-
-        <div class="deck deck-carte only-carte">
-          <button id="show-button" class="show-btn" type="button" aria-label="Faire un show">
-            <span class="show-mic" aria-hidden="true">🎤</span>
-            <span class="harvest-label">FAIRE UN SHOW</span>
-          </button>
-          <p id="show-hint" class="deck-hint"></p>
-        </div>
-      </main>
-
-      <aside class="col-left">
-        <section class="card">
-          <h2 class="card-title">Vibe check</h2>
-          <div class="meter-row"><span>abonnés</span><strong id="fans-count"></strong><span id="fans-trend" class="trend"></span></div>
-          <div class="meter meter-fans"><div id="fans-fill" class="meter-fill"></div><div id="fans-ref" class="meter-mark" title="Sous ce seuil : fail out"></div></div>
-          <p id="next-tier" class="hint"></p>
-        </section>
-
-        <section class="card card-stash">
-          <h2 class="card-title">Le stash</h2>
-          <div class="meter-row"><span>niveau de zen</span><strong id="quality"></strong></div>
-          <div class="meter meter-high"><div id="high-fill" class="meter-fill"></div><div id="overdose-marker" class="meter-mark meter-mark-danger" title="Au-delà : trop gelé"></div></div>
-          <button id="buy-cannabis" class="btn btn-weed" type="button">
-            <span>Se ravitailler</span><span id="cannabis-price" class="btn-price"></span>
-          </button>
-          <button id="roll-joint" class="btn btn-joint" type="button" hidden>
-            <span>Joint maison</span><span id="joint-cost" class="btn-price"></span>
-          </button>
-          <p class="hint">Meilleurs beats, mais le prix monte à chaque fois. Trop, et tu fixes le plafond.</p>
-          <p id="status-overdose" class="alert" hidden>Trop gelé. La prod ralentit.</p>
-          <p id="status-fail-text" class="alert alert-danger" hidden>Fail out : la prod ralentit et les abonnés décrochent.</p>
-        </section>
-      </aside>
-
-      <aside class="col-right">
-        <section class="card card-territory only-carte">
-          <h2 id="territory-name" class="card-title"></h2>
-          <p id="territory-status" class="territory-status"></p>
-          <p id="territory-description" class="territory-description"></p>
-          <p id="territory-rival" class="territory-rival"></p>
-          <p id="territory-bonus" class="territory-bonus"></p>
-          <div id="territory-progress" class="territory-progress">
-            <div class="meter meter-hype"><div id="territory-fill" class="meter-fill"></div></div>
-            <div class="meter-row"><span id="territory-hype"></span><strong id="territory-rate"></strong></div>
+        <div class="console-center">
+          <div class="deck only-studio">
+            <button id="beat-button" class="vinyl" type="button" aria-label="Faire un beat">
+              <span class="vinyl-disc"><span class="vinyl-label">BEAT</span></span>
+            </button>
+            <div class="tonearm" aria-hidden="true"></div>
           </div>
-          <button id="territory-start" class="btn btn-campaign" type="button"><span id="territory-start-label">Lancer la campagne</span></button>
-          <div id="territory-boosts" class="territory-boosts">
-            <button id="territory-promo" class="btn btn-promo" type="button"><span>Promo +10 %</span><span id="promo-cost" class="btn-price"></span></button>
-            <button id="territory-samples" class="btn btn-joint" type="button"><span>Échantillons +10 %</span><span id="samples-cost" class="btn-price"></span></button>
+          <div class="deck deck-serre only-serre">
+            <button id="harvest-button" class="harvest" type="button" aria-label="Récolter">
+              <span class="harvest-plant"></span>
+              <span class="harvest-label">RÉCOLTER</span>
+            </button>
           </div>
-        </section>
+        </div>
 
-        <section class="card card-territories only-carte">
-          <h2 class="card-title">Le monde</h2>
-          <ul id="territory-list" class="territory-list"></ul>
-        </section>
+        <div class="console-side console-stash">
+          <button id="buy-cannabis" class="btn btn-round btn-weed" type="button" aria-label="Se ravitailler">
+            <span class="btn-round-icon" aria-hidden="true">🌿</span><span class="btn-round-label">stash</span><span id="cannabis-price" class="btn-price"></span>
+          </button>
+          <button id="roll-joint" class="btn btn-round btn-joint" type="button" aria-label="Rouler un joint maison" hidden>
+            <span class="btn-round-icon" aria-hidden="true">🚬</span><span class="btn-round-label">joint</span><span id="joint-cost" class="btn-price"></span>
+          </button>
+        </div>
+      </div>
 
-        <section id="card-profile" class="card card-profile only-classement">
-          <h2 class="card-title">Ton profil</h2>
-          <form id="profile-form" class="profile-form" novalidate>
-            <p class="hint">Choisis un pseudo et un code secret de 4 chiffres. Le code sert à te reconnecter sur un autre appareil : pas de courriel, pas de mot de passe.</p>
-            <label class="field"><span>Pseudo</span><input id="profile-pseudo" name="pseudo" type="text" autocomplete="nickname" maxlength="16" spellcheck="false" required></label>
-            <label class="field"><span>Code secret</span><input id="profile-code" name="code" type="password" inputmode="numeric" autocomplete="off" pattern="[0-9]{4}" maxlength="4" required></label>
-            <button id="profile-join" class="btn btn-campaign" type="submit"><span>Entrer dans le classement</span><span class="btn-price">🏆</span></button>
-            <p class="hint">Déjà inscrit ailleurs ? Entre le même pseudo et le même code. Après 5 mauvais codes, le pseudo est bloqué 15 minutes.</p>
-          </form>
-          <div id="profile-card" class="profile-card" hidden>
-            <p class="profile-name"><span id="profile-face" class="board-face"></span><strong id="profile-current"></strong></p>
-            <p id="profile-rank" class="profile-rank"></p>
-            <p id="profile-sent" class="hint"></p>
-            <button id="profile-send" class="btn btn-weed" type="button"><span>Envoyer mon score</span><span class="btn-price">↑</span></button>
-            <button id="profile-leave" class="link profile-leave" type="button">Changer de pseudo sur cet appareil</button>
-          </div>
-          <p id="profile-notice" class="profile-notice" role="status" hidden></p>
-        </section>
+      <div class="deck deck-carte only-carte">
+        <button id="show-button" class="show-btn" type="button" aria-label="Faire un show">
+          <span class="show-mic" aria-hidden="true">🎤</span>
+          <span class="harvest-label">FAIRE UN SHOW</span>
+        </button>
+        <p id="show-hint" class="deck-hint"></p>
+      </div>
 
-        <section class="card card-shop not-carte">
+      <section class="card card-territory only-carte">
+        <h2 id="territory-name" class="card-title"></h2>
+        <p id="territory-status" class="territory-status"></p>
+        <p id="territory-description" class="territory-description"></p>
+        <p id="territory-rival" class="territory-rival"></p>
+        <p id="territory-bonus" class="territory-bonus"></p>
+        <div id="territory-progress" class="territory-progress">
+          <div class="meter meter-hype"><div id="territory-fill" class="meter-fill"></div></div>
+          <div class="meter-row"><span id="territory-hype"></span><strong id="territory-rate"></strong></div>
+        </div>
+        <button id="territory-start" class="btn btn-campaign" type="button"><span id="territory-start-label">Lancer la campagne</span></button>
+        <div id="territory-boosts" class="territory-boosts">
+          <button id="territory-promo" class="btn btn-promo" type="button"><span>Promo +10 %</span><span id="promo-cost" class="btn-price"></span></button>
+          <button id="territory-samples" class="btn btn-joint" type="button"><span>Échantillons +10 %</span><span id="samples-cost" class="btn-price"></span></button>
+        </div>
+      </section>
+
+      <section id="classement" class="board only-classement" aria-labelledby="board-title">
+        <header class="board-head">
+          <h2 id="board-title" class="board-title"><span>Le top</span><span>du QG</span></h2>
+          <p id="board-live" class="board-live"></p>
+        </header>
+        <p id="board-message" class="board-message" hidden></p>
+        <ol id="board-list" class="board-list"></ol>
+        <div id="board-mine" class="board-mine" hidden></div>
+        <p class="board-foot">Classé selon l'argent total gagné pendant ta meilleure partie.</p>
+      </section>
+
+      <section id="card-profile" class="card card-profile only-classement">
+        <h2 class="card-title">Ton profil</h2>
+        <form id="profile-form" class="profile-form" novalidate>
+          <p class="hint">Choisis un pseudo et un code secret de 4 chiffres. Le code sert à te reconnecter sur un autre appareil : pas de courriel, pas de mot de passe.</p>
+          <label class="field"><span>Pseudo</span><input id="profile-pseudo" name="pseudo" type="text" autocomplete="nickname" maxlength="16" spellcheck="false" required></label>
+          <label class="field"><span>Code secret</span><input id="profile-code" name="code" type="password" inputmode="numeric" autocomplete="off" pattern="[0-9]{4}" maxlength="4" required></label>
+          <button id="profile-join" class="btn btn-campaign" type="submit"><span>Entrer dans le classement</span><span class="btn-price">🏆</span></button>
+          <p class="hint">Déjà inscrit ailleurs ? Entre le même pseudo et le même code. Après 5 mauvais codes, le pseudo est bloqué 15 minutes.</p>
+        </form>
+        <div id="profile-card" class="profile-card" hidden>
+          <p class="profile-name"><span id="profile-face" class="board-face"></span><strong id="profile-current"></strong></p>
+          <p id="profile-rank" class="profile-rank"></p>
+          <p id="profile-sent" class="hint"></p>
+          <button id="profile-send" class="btn btn-weed" type="button"><span>Envoyer mon score</span><span class="btn-price">↑</span></button>
+          <button id="profile-leave" class="link profile-leave" type="button">Changer de pseudo sur cet appareil</button>
+        </div>
+        <p id="profile-notice" class="profile-notice" role="status" hidden></p>
+      </section>
+    </main>
+
+    <!-- Barre du bas : les lieux, et la boutique au milieu -->
+    <nav class="navbar" aria-label="Navigation du jeu">
+      <button class="nav-btn scene-tab is-active" type="button" data-scene="studio" aria-label="Le studio">
+        <span class="nav-icon" aria-hidden="true">🎧</span><span class="nav-label">Studio</span>
+      </button>
+      <button id="tab-serre" class="nav-btn scene-tab" type="button" data-scene="serre">
+        <span class="nav-icon" aria-hidden="true">🌿</span><span class="nav-label">Serre</span>
+      </button>
+      <button id="nav-shop" class="nav-btn nav-shop" type="button" aria-label="La boutique">
+        <span class="nav-icon" aria-hidden="true">🛒</span><span id="nav-shop-label" class="nav-label">Boutique</span><span id="shop-badge" class="badge" hidden></span>
+      </button>
+      <button id="tab-carte" class="nav-btn scene-tab" type="button" data-scene="carte">
+        <span class="nav-icon" aria-hidden="true">🗺️</span><span class="nav-label">Carte</span>
+      </button>
+      <button id="tab-classement" class="nav-btn scene-tab" type="button" data-scene="classement" aria-label="Le classement">
+        <span class="nav-icon" aria-hidden="true">🏆</span><span class="nav-label">Top</span>
+      </button>
+    </nav>
+
+    <!-- Panneaux qui montent du bas -->
+    <div id="sheet-backdrop" class="sheet-backdrop" hidden></div>
+
+    <section id="sheet-shop" class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-shop-title" hidden>
+      <header class="sheet-head">
+        <h2 id="sheet-shop-title" class="sheet-title">La boutique</h2>
+        <button class="sheet-close" type="button" data-close aria-label="Fermer">✕</button>
+      </header>
+      <div class="sheet-body">
+        <section class="card-shop not-carte">
           <div class="tabs only-studio" role="tablist">
             <button class="tab is-active" type="button" data-tab="producers">Le matos</button>
             <button class="tab" type="button" data-tab="upgrades">Déco du QG</button>
@@ -190,20 +226,43 @@
           <ul id="shop-equipment" class="shop" data-panel="equipment" hidden></ul>
           <ul id="shop-strains" class="shop" data-panel="strains" hidden></ul>
         </section>
-
-        <section class="phone">
-          <div class="phone-bar"><span>QGram</span><span>🔔</span></div>
-          <ul id="messages" class="feed" aria-live="polite"></ul>
+        <section class="card-territories only-carte">
+          <ul id="territory-list" class="territory-list"></ul>
         </section>
-      </aside>
-    </div>
+      </div>
+    </section>
 
-    <footer class="footer">
-      <span id="save-status"></span>
-      <button id="toggle-sound" class="link" type="button"></button>
-      <button id="toggle-motion" class="link" type="button"></button>
-      <button id="reset" class="link" type="button">Nouvelle partie</button>
-    </footer>
+    <section id="sheet-feed" class="sheet sheet-phone" role="dialog" aria-modal="true" aria-labelledby="sheet-feed-title" hidden>
+      <header class="sheet-head">
+        <h2 id="sheet-feed-title" class="sheet-title">QGram</h2>
+        <button class="sheet-close" type="button" data-close aria-label="Fermer">✕</button>
+      </header>
+      <div class="sheet-body">
+        <ul id="messages" class="feed"></ul>
+      </div>
+    </section>
+
+    <section id="sheet-settings" class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-settings-title" hidden>
+      <header class="sheet-head">
+        <h2 id="sheet-settings-title" class="sheet-title">Ton QG</h2>
+        <button class="sheet-close" type="button" data-close aria-label="Fermer">✕</button>
+      </header>
+      <div class="sheet-body">
+        <div class="career">
+          <span id="career-face" class="board-face career-face"></span>
+          <div>
+            <p id="career-name" class="career-name"></p>
+            <p id="next-tier" class="hint"></p>
+          </div>
+        </div>
+        <div class="settings">
+          <button id="toggle-sound" class="btn btn-setting" type="button"></button>
+          <button id="toggle-motion" class="btn btn-setting" type="button"></button>
+          <button id="reset" class="btn btn-setting btn-danger" type="button">Nouvelle partie</button>
+        </div>
+        <p id="save-status" class="hint"></p>
+      </div>
+    </section>
   </section>
 
   <p id="load-error" class="load-error" hidden>

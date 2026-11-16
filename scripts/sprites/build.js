@@ -7,6 +7,7 @@
 //   assets/images/serre/plante.png            un plant : 3 stades de 16 × 24
 //   assets/images/carte/fond.png              la carte du monde (160 × 100)
 //   assets/images/effets/<nom>.png            pièce, note, drapeau (effets visuels)
+//   assets/images/interface/icone-<taille>.png icône du jeu (192 et 512)
 // Option --preview <fichier.png> : planche agrandie ×6 pour vérifier le rendu.
 
 import fs from 'node:fs';
@@ -18,7 +19,7 @@ import { CHARACTERS } from './characters.js';
 import { QG_W, QG_H, drawQg } from './qg.js';
 import { SERRE_W, SERRE_H, PLANT_W, PLANT_H, drawSerre, drawPlant } from './serre.js';
 import { CARTE_W, CARTE_H, drawCarte } from './carte.js';
-import { COIN, NOTE, FLAG, drawCoin, drawNote, drawFlag } from './effets.js';
+import { COIN, NOTE, FLAG, ICON, drawCoin, drawNote, drawFlag, drawIcon } from './effets.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const outDir = path.join(root, 'assets/images/personnages');
@@ -87,6 +88,12 @@ for (const [file, size, draw] of [['piece', COIN, drawCoin], ['note', NOTE, draw
   draw(g);
   writePng(path.join(effetsDir, `${file}.png`), [[g]]);
 }
+
+const interfaceDir = path.join(root, 'assets/images/interface');
+fs.mkdirSync(interfaceDir, { recursive: true });
+const icon = new Grid(ICON.w, ICON.h);
+drawIcon(icon);
+for (const size of [192, 512]) writePng(path.join(interfaceDir, `icone-${size}.png`), [[icon]], size / ICON.w);
 
 const previewIndex = process.argv.indexOf('--preview');
 if (previewIndex !== -1) {

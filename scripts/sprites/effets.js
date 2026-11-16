@@ -58,3 +58,24 @@ export function drawFlag(g) {
     'XX.....',
   ], { X: INK, P: PINK, D: PINK_DARK });
 }
+
+// Icône du jeu (écran d'accueil du téléphone) : le vinyle du QG sur fond prune, 32 × 32.
+export const ICON = { w: 32, h: 32 };
+export function drawIcon(g) {
+  g.rect(0, 0, 31, 31, '#1b1426');
+  g.rect(1, 1, 30, 30, '#2a1f3a');
+  g.disc(15.5, 15.5, 13.5, INK);
+  g.disc(15.5, 15.5, 12.5, '#121214');
+  for (const r of [11, 9]) {
+    for (let a = 0; a < 360; a += 4) {
+      const x = Math.round(15.5 + r * Math.cos((a * Math.PI) / 180));
+      const y = Math.round(15.5 + r * Math.sin((a * Math.PI) / 180));
+      g.set(x, y, '#2c2c33');
+    }
+  }
+  for (let i = 0; i < 6; i += 1) g.set(21 + i, 6 + i, '#4a4a52'); // reflet
+  g.disc(15.5, 15.5, 5.5, INK);
+  g.disc(15.5, 15.5, 4.5, '#ff8a5b');
+  g.rect(15, 15, 16, 16, INK);
+  g.rect(13, 12, 14, 12, LAMP_LIGHT);
+}
