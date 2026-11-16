@@ -3,8 +3,11 @@
 //   assets/images/personnages/<id>-sheet.png  feuille : lignes face / profil / dos, 2 images (respiration)
 //   assets/images/personnages/sprites.json    description de la feuille
 //   assets/images/qg/fond.png                 le QG (160 × 100)
+//   assets/images/qg/<id>-iso.png             objet du studio isométrique (vues côte à côte)
+//   docs/gabarits-iso/*.png                    gabarits pour dessiner un objet à la main
 //   assets/images/serre/fond.png              la serre (160 × 100)
 //   assets/images/serre/plante.png            un plant : 3 stades de 16 × 24
+//   assets/images/serre/<id>-iso.png          objet de la serre isométrique (vues côte à côte)
 //   assets/images/carte/fond.png              la carte du monde (160 × 100)
 //   assets/images/animaux/<id>.png            un animal : 2 images de 28 × 20 (la queue bouge)
 //   assets/images/effets/<nom>.png            pièce, note, drapeau (effets visuels)
@@ -16,25 +19,30 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Grid, W, H, compose } from './grid.js';
 import { encodePng } from './png.js';
-import { CHARACTERS } from './characters.js';
+import { CHARACTERS as HAND_DRAWN } from './characters.js';
+import { characterFromLook, renderFrame, renderSheet } from '../../src/poupee/index.js';
 import { QG_W, QG_H, drawQg } from './qg.js';
 import { SERRE_W, SERRE_H, PLANT_W, PLANT_H, drawSerre, drawPlant } from './serre.js';
 import { CARTE_W, CARTE_H, drawCarte } from './carte.js';
 import { PETS, PET_W, PET_H, drawPet } from './animaux.js';
 import { COIN, NOTE, FLAG, ICON, drawCoin, drawNote, drawFlag, drawIcon } from './effets.js';
+import { ISO_OBJECTS, drawIsoObject } from './objets-iso.js';
+import { SERRE_OBJECTS } from './objets-serre.js';
+import { floorTemplate, wallTemplate } from './iso.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const outDir = path.join(root, 'assets/images/personnages');
-const VIEWS = ['front', 'side', 'back'];
-const WAIST = 30;
+const render = renderFrame;
 
-function render(character, view, frame) {
-  const g = new Grid(W, H);
-  character[view](g);
-  if (frame === 1) g.bob(WAIST);
-  g.outline();
-  return g;
-}
+// Les personnages de data/characters.json : une fiche `look` (poupée de papier, src/poupee/index.js)
+// passe avant le dessin à la main (scripts/sprites/characters.js).
+const characterData = JSON.parse(fs.readFileSync(path.join(root, 'data/characters.json'), 'utf8'));
+const CHARACTERS = characterData.map((c) => {
+  if (c.look) return characterFromLook(c.id, c.look);
+  const drawn = HAND_DRAWN.find((h) => h.id === c.id);
+  if (!drawn) console.warn(`⚠️  ${c.id} : ni fiche "look" ni dessin à la main, pas de planche.`);
+  return drawn;
+}).filter(Boolean);
 
 function writePng(file, cells, scale = 1) {
   const { width, height, rgba } = compose(cells, scale);
@@ -44,7 +52,7 @@ function writePng(file, cells, scale = 1) {
 fs.mkdirSync(outDir, { recursive: true });
 const sheets = {};
 for (const character of CHARACTERS) {
-  const cells = VIEWS.map((view) => [render(character, view, 0), render(character, view, 1)]);
+  const cells = renderSheet(character);
   writePng(path.join(outDir, `${character.id}-sheet.png`), cells);
   writePng(path.join(outDir, `${character.id}.png`), [[cells[0][0]]]);
   sheets[character.id] = `${character.id}-sheet.png`;
@@ -64,6 +72,16 @@ const room = new Grid(QG_W, QG_H);
 drawQg(room);
 writePng(path.join(qgDir, 'fond.png'), [[room]]);
 
+// Les objets du studio isométrique (scripts/sprites/objets-iso.js).
+const isoViews = ISO_OBJECTS.map((object) => drawIsoObject(object));
+ISO_OBJECTS.forEach((object, i) => writePng(path.join(qgDir, `${object.id}-iso.png`), [isoViews[i]]));
+
+// Gabarits pour dessiner un objet à la main (losange de l'emprise, pointe d'ancrage en rouge).
+const gabaritsDir = path.join(root, 'docs/gabarits-iso');
+fs.mkdirSync(gabaritsDir, { recursive: true });
+for (const [w, d] of [[1, 1], [2, 1], [2, 2], [3, 1], [3, 2]]) writePng(path.join(gabaritsDir, `sol-${w}x${d}.png`), [[floorTemplate(w, d, 48)]]);
+for (const len of [1, 2, 3]) writePng(path.join(gabaritsDir, `mur-${len}.png`), [[wallTemplate(len, 24)]]);
+
 const serreDir = path.join(root, 'assets/images/serre');
 fs.mkdirSync(serreDir, { recursive: true });
 const serre = new Grid(SERRE_W, SERRE_H);
@@ -76,6 +94,10 @@ const plants = [0, 1, 2].map((stage) => {
   return p;
 });
 writePng(path.join(serreDir, 'plante.png'), [plants]);
+
+// Les objets de la serre isométrique (scripts/sprites/objets-serre.js).
+const serreViews = SERRE_OBJECTS.map((object) => drawIsoObject(object));
+SERRE_OBJECTS.forEach((object, i) => writePng(path.join(serreDir, `${object.id}-iso.png`), [serreViews[i]]));
 
 const carteDir = path.join(root, 'assets/images/carte');
 fs.mkdirSync(carteDir, { recursive: true });
@@ -117,7 +139,7 @@ if (previewIndex !== -1) {
   // Le QG avec le premier personnage debout sur le tapis.
   const scene = new Grid(QG_W, QG_H);
   drawQg(scene);
-  const hero = render(CHARACTERS[2], 'front', 0);
+  const hero = render(CHARACTERS.find((c) => c.id === 'xavier') ?? CHARACTERS[0], 'front', 0);
   for (let y = 0; y < H; y += 1) {
     for (let x = 0; x < W; x += 1) scene.set(64 + x, 45 + y, hero.px[y][x]);
   }
@@ -133,5 +155,7 @@ if (previewIndex !== -1) {
   writePng(process.argv[previewIndex + 1].replace(/\.png$/, '-serre.png'), [[greenhouse]], 5);
   writePng(process.argv[previewIndex + 1].replace(/\.png$/, '-carte.png'), [[carte]], 5);
   writePng(process.argv[previewIndex + 1].replace(/\.png$/, '-animaux.png'), petFrames, 10);
+  isoViews.forEach((views, i) => writePng(process.argv[previewIndex + 1].replace(/\.png$/, `-iso-${ISO_OBJECTS[i].id}.png`), [views], 6));
+  serreViews.forEach((views, i) => writePng(process.argv[previewIndex + 1].replace(/\.png$/, `-serre-${SERRE_OBJECTS[i].id}.png`), [views], 6));
 }
-console.log('Sprites générés dans assets/images/ (personnages, qg, serre, carte, animaux, effets)');
+console.log('Sprites générés dans assets/images/ (personnages, qg + objets isométriques, serre + objets isométriques, carte, animaux, effets) et docs/gabarits-iso/');

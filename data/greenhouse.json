@@ -22,5 +22,44 @@
     {"id": "haze-cosmique", "name": "Haze cosmique", "description": "Les beats sonnent en 4D.", "cost": 1000000, "costGrowth": 4, "effects": [{"stat": "beatValue", "multiply": 1.15}]},
     {"id": "lunaire-1", "name": "Lunaire #1", "description": "Cultivée sur la Lune. Évidemment.", "cost": 10000000, "costGrowth": 4, "effects": [{"stat": "grow", "multiply": 1.15}, {"stat": "click", "multiply": 1.15}]},
     {"id": "nebuleuse", "name": "Nébuleuse de minuit", "description": "Personne se souvient de l'avoir goûtée.", "cost": 100000000, "costGrowth": 4, "effects": [{"stat": "beatValue", "multiply": 1.2}, {"stat": "bps", "multiply": 1.05}]}
-  ]
+  ],
+  "decor": {
+    "room": { "width": 8, "depth": 8 },
+    "items": [
+      { "id": "pot-de-yogourt", "source": "equipment", "icon": "🥛", "sprite": "serre/pot-de-yogourt-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 1, "height": 20, "color": "#f2f0ea" },
+      { "id": "lampe-del", "source": "equipment", "icon": "💡", "sprite": "serre/lampe-del-iso.png", "footprint": [2, 1], "surface": "mur", "rotations": 1, "height": 10, "elevation": 26, "color": "#ff5fd2" },
+      { "id": "tente-culture", "source": "equipment", "icon": "⛺", "sprite": "serre/tente-culture-iso.png", "footprint": [2, 2], "surface": "sol", "rotations": 2, "height": 54, "color": "#2c2c32" },
+      { "id": "hydroponie", "source": "equipment", "icon": "💧", "sprite": "serre/hydroponie-iso.png", "footprint": [2, 1], "surface": "sol", "rotations": 2, "height": 28, "color": "#e8e8e0" },
+      { "id": "ventilation", "source": "equipment", "icon": "🌀", "sprite": "serre/ventilation-iso.png", "footprint": [1, 1], "surface": "mur", "rotations": 1, "height": 16, "elevation": 22, "color": "#c9ced8" },
+      { "id": "ami-botaniste", "source": "equipment", "icon": "🧑‍🌾", "sprite": "serre/ami-botaniste-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 2, "height": 30, "color": "#c9a25a" },
+      { "id": "serre-auto", "source": "equipment", "icon": "🤖", "sprite": "serre/serre-auto-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 2, "height": 38, "color": "#9fb4c8" },
+      { "id": "ferme-lunaire", "source": "equipment", "icon": "🌕", "sprite": "serre/ferme-lunaire-iso.png", "footprint": [2, 2], "surface": "sol", "rotations": 1, "height": 44, "color": "#d9d2a6" },
+
+      { "id": "kush-du-sous-sol", "source": "strain", "icon": "🌿", "sprite": "serre/kush-du-sous-sol-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 1, "height": 30, "color": "#2f8f3a" },
+      { "id": "mauve-laveuse", "source": "strain", "icon": "💜", "sprite": "serre/mauve-laveuse-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 1, "height": 30, "color": "#8a4fbf" },
+      { "id": "og-panier-linge", "source": "strain", "icon": "🧺", "sprite": "serre/og-panier-linge-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 1, "height": 30, "color": "#e8d8b0" },
+      { "id": "sativa-voisin", "source": "strain", "icon": "🌱", "sprite": "serre/sativa-voisin-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 1, "height": 40, "color": "#7bd389" },
+      { "id": "indica-divan", "source": "strain", "icon": "🛋️", "sprite": "serre/indica-divan-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 1, "height": 26, "color": "#2f5a2a" },
+      { "id": "haze-cosmique", "source": "strain", "icon": "🌌", "sprite": "serre/haze-cosmique-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 1, "height": 32, "color": "#3fb6c8" },
+      { "id": "lunaire-1", "source": "strain", "icon": "🌙", "sprite": "serre/lunaire-1-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 1, "height": 30, "color": "#e8e2a0" },
+      { "id": "nebuleuse", "source": "strain", "icon": "🔮", "sprite": "serre/nebuleuse-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 1, "height": 32, "color": "#c84fd8" },
+
+      { "id": "arrosoir", "source": "deco", "name": "Arrosoir", "icon": "🚿", "sprite": "serre/arrosoir-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 2, "height": 14, "color": "#3fae8c" },
+      { "id": "sac-de-terreau", "source": "deco", "name": "Sac de terreau", "icon": "🪴", "sprite": "serre/sac-de-terreau-iso.png", "footprint": [1, 1], "surface": "sol", "rotations": 2, "height": 14, "color": "#8a5a3b" },
+      { "id": "pancarte", "source": "deco", "name": "Pancarte « Défense de cueillir »", "icon": "🪧", "sprite": "serre/pancarte-iso.png", "footprint": [1, 1], "surface": "mur", "rotations": 1, "height": 14, "elevation": 16, "color": "#e9dcc0" }
+    ],
+    "vibe": [
+      { "id": "coin-semis", "name": "Coin des semis", "icon": "🌱", "items": ["pot-de-yogourt", "arrosoir"], "effects": [{ "stat": "harvest", "multiply": 1.1 }] },
+      { "id": "sous-les-del", "name": "Sous les DEL", "icon": "💡", "items": ["lampe-del", "tente-culture"], "effects": [{ "stat": "grow", "multiply": 1.05 }] },
+      { "id": "air-pur", "name": "Air pur", "icon": "🌀", "items": ["ventilation", "tente-culture"], "effects": [{ "stat": "grow", "multiply": 1.03 }] },
+      { "id": "labo-vert", "name": "Labo vert", "icon": "🧪", "items": ["ami-botaniste", "hydroponie"], "effects": [{ "stat": "grow", "multiply": 1.05 }] },
+      { "id": "pilote-auto", "name": "Pilote automatique", "icon": "🤖", "items": ["serre-auto", "arrosoir"], "effects": [{ "stat": "harvest", "multiply": 1.05 }] },
+      { "id": "bon-terreau", "name": "Bon terreau", "icon": "🪴", "items": ["sac-de-terreau", "pot-de-yogourt"], "effects": [{ "stat": "cannabisPower", "multiply": 1.03 }] },
+      { "id": "croisement", "name": "Croisement maison", "icon": "🧬", "items": ["kush-du-sous-sol", "mauve-laveuse"], "effects": [{ "stat": "cannabisPower", "multiply": 1.05 }] },
+      { "id": "jardin-cosmique", "name": "Jardin cosmique", "icon": "🌌", "items": ["haze-cosmique", "ferme-lunaire"], "effects": [{ "stat": "grow", "multiply": 1.05 }] },
+      { "id": "nuit-etoilee", "name": "Nuit étoilée", "icon": "✨", "items": ["lunaire-1", "nebuleuse"], "effects": [{ "stat": "harvest", "multiply": 1.05 }] },
+      { "id": "sieste", "name": "Sieste au jardin", "icon": "😴", "items": ["indica-divan", "ami-botaniste"], "effects": [{ "stat": "cannabisDecay", "multiply": 0.95 }] },
+      { "id": "jour-de-lessive", "name": "Jour de lessive", "icon": "🧺", "items": ["og-panier-linge", "sativa-voisin"], "effects": [{ "stat": "cannabisPrice", "multiply": 0.95 }] }
+    ]
+  }
 }

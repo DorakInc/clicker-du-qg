@@ -22,6 +22,14 @@ Pour vérifier la logique du jeu et les fichiers de `data/` :
 npm test
 ```
 
+## Créer un personnage
+
+```bash
+npm run atelier
+```
+
+Puis ouvrir http://127.0.0.1:8001 : l'atelier des personnages. On y dépose les photos en T-pose (de face, de profil, de dos) pour prendre les couleurs à la pipette, on compose le look en pixel art avec des pièces (coiffure, haut, bas, souliers, accessoires…), on choisit les pouvoirs et la description, et « Enregistrer dans le jeu » écrit la fiche dans `data/characters.json` et génère sa planche de sprites. Les photos ne quittent jamais le navigateur. Détails dans [data/README.md](data/README.md#personnages-charactersjson).
+
 ## Organisation du dépôt
 
 | Dossier | Volet | Contenu |
@@ -31,6 +39,9 @@ npm test
 | `src/audio/` | A | Lecture des sons déclarés dans `data/sounds.json` |
 | `data/` | A, B et C | Contenu du jeu en JSON : voir [data/README.md](data/README.md) |
 | `tests/` | A | Tests de la logique et des données |
+| `outils/` | A, B, C | L'atelier des personnages (`npm run atelier`) |
+| `src/poupee/` | A, B | La poupée de papier des personnages : corps + pièces (`parts/`), et le look encodé dans l'identifiant d'un perso créé (`code.js`). Sert au jeu, à l'atelier et à `npm run sprites` |
+| `scripts/sprites/` | A, B | Les dessins en code (`npm run sprites`) |
 | `assets/images/` | B, Visuel | `personnages/`, `qg/`, `interface/`, `effets/` |
 | `assets/audio/` | C, Son | `musique/`, `effets/` (mp3 ou ogg) |
 

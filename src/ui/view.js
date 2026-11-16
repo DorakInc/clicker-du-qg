@@ -2,16 +2,20 @@
 // l'état directement ; les clics passent par les fonctions `actions` reçues.
 //
 // Images (volet B), cherchées par id ; un remplaçant s'affiche si le fichier manque :
-//   assets/images/personnages/<id>-sheet.png  feuille de sprites (npm run sprites)
+//   assets/images/personnages/<id>-sheet.png  feuille de sprites (npm run sprites ; perso créé : sprites.js)
 //   assets/images/qg/fond.png                 le décor du QG (npm run sprites)
-//   assets/images/qg/<idUpgrade>.png          objet du QG une fois acheté
+//   assets/images/<sprite>                    objet d'une pièce isométrique (decor.json, greenhouse.json ; voir room-view.js)
 //   assets/images/animaux/<idAnimal>.png      animal de compagnie : 2 images de 28 × 20 (npm run sprites)
 
 import {
   beatValue, beatsPerSecond, cannabisPrice, equipmentCost, formatMoney, formatNumber, getModifiers,
   gramsPerSecond, incomePerSecond, isAvailable, isConquered, isOverdosed, isUnlocked, jointCost,
-  netHypePerSecond, petCost, petLevel, producerCost, promoCost, quality, samplesCost, strainCost,
+  netHypePerSecond, petCost, petLevel, producerCost, promoCost, quality, samplesCost, serreRoom, strainCost, studioRoom,
 } from '../game/index.js';
+import { createRoomView } from './room-view.js';
+import { serreTheme, studioTheme } from './room-themes.js';
+import { characterOf } from '../game/index.js';
+import { sheetUrl } from './sprites.js';
 
 const formatGrams = (grams) => `${formatNumber(grams)} g`;
 
@@ -25,27 +29,18 @@ export function describeEffect({ stat, multiply }, texts) {
   return `${pct > 0 ? '+' : ''}${pct} % ${label}`;
 }
 
-/** Image avec remplaçant si le fichier n'existe pas encore. */
-function imageOr(src, alt, fallback) {
-  const img = document.createElement('img');
-  img.alt = alt;
-  img.src = src;
-  img.addEventListener('error', () => img.replaceWith(fallback), { once: true });
-  return img;
-}
-
 /**
  * Personnage animé (respiration) à partir de sa feuille de sprites :
  * 2 images de 32 × 48 par ligne, ligne 0 = vue de face. La taille vient de
  * la variable CSS --s (héritée du parent si `scale` n'est pas donné).
  */
-function spriteOr(id, name, fallback, scale) {
+function spriteOr(src, name, fallback, scale) {
+  if (!src) return fallback;
   const sprite = document.createElement('div');
   sprite.className = 'sprite';
   sprite.setAttribute('role', 'img');
   sprite.setAttribute('aria-label', name);
   if (scale) sprite.style.setProperty('--s', scale);
-  const src = `assets/images/personnages/${id}-sheet.png`;
   const probe = new Image();
   probe.addEventListener('error', () => sprite.replaceWith(fallback), { once: true });
   probe.src = src;
@@ -72,7 +67,8 @@ function el(tag, className, text) {
 
 // ---- Sélection de personnage --------------------------------------------
 
-export function showCharacterSelect(data, onPick) {
+/** onPick(id) : un personnage préfait ; onCreate() : ouvrir l'écran « Créer mon perso ». */
+export function showCharacterSelect(data, onPick, onCreate) {
   $('game-screen').hidden = true;
   $('select-screen').hidden = false;
   const list = $('character-list');
@@ -82,8 +78,9 @@ export function showCharacterSelect(data, onPick) {
     const card = el('button', 'character-card');
     card.type = 'button';
     card.dataset.character = character.id;
+    if (character.color) card.style.setProperty('--stage', character.color); // couleur de fond de la carte (facultative)
     const portrait = el('div', 'character-portrait');
-    portrait.append(spriteOr(character.id, character.name, document.createTextNode(character.name[0]), 3));
+    portrait.append(spriteOr(sheetUrl(data, character.id), character.name, document.createTextNode(character.name[0]), 3));
     const effects = el('ul', 'character-effects');
     for (const effect of character.effects) effects.append(el('li', '', describeEffect(effect, data.texts)));
     card.append(
@@ -94,6 +91,22 @@ export function showCharacterSelect(data, onPick) {
       effects,
     );
     card.addEventListener('click', () => onPick(character.id));
+    list.append(card);
+  }
+
+  // La carte « Créer mon perso » (src/ui/creator-view.js, data/creation.json).
+  if (onCreate && data.creation) {
+    const card = el('button', 'character-card character-card-create');
+    card.type = 'button';
+    const portrait = el('div', 'character-portrait');
+    portrait.append(el('span', 'character-create-icon', '✨'));
+    card.append(
+      portrait,
+      el('p', 'character-name', 'Ton perso'),
+      el('p', 'character-strength', 'Sur mesure'),
+      el('p', 'character-description', `Ton look, ${data.creation.points} points de talent à placer et un signe particulier tiré au hasard.`),
+    );
+    card.addEventListener('click', () => onCreate());
     list.append(card);
   }
 }
@@ -169,6 +182,8 @@ export function createGameView(data, actions, fx) {
   // Les lieux (barre du bas) : studio, serre, carte, classement — la même partie.
   const SHOP_TITLES = { studio: 'La boutique', serre: 'La serre', carte: 'Le monde' };
   function setScene(name) {
+    if (name !== 'studio') studio?.stopEditing();
+    if (name !== 'serre') serre?.stopEditing();
     closeSheet();
     game.dataset.scene = name;
     for (const t of document.querySelectorAll('.scene-tab')) t.classList.toggle('is-active', t.dataset.scene === name);
@@ -328,18 +343,25 @@ export function createGameView(data, actions, fx) {
   const scene = $('qg');
   const scenes = [scene, $('serre'), $('carte'), $('classement')];
   function fitScenes() {
-    for (const s of scenes) if (s.clientWidth && s.classList.contains('scene')) s.style.setProperty('--s', s.clientWidth / 160);
+    // Le studio isométrique donne sa propre largeur en pixels (data-width).
+    for (const s of scenes) if (s.clientWidth && s.classList.contains('scene')) s.style.setProperty('--s', s.clientWidth / Number(s.dataset.width || 160));
   }
   const observer = new ResizeObserver(fitScenes);
+  // Le QG et la serre : des pièces isométriques avec leur mode Édition (src/ui/room-view.js).
+  const describe = (effect) => describeEffect(effect, data.texts);
+  const studio = createRoomView(data, {
+    room: studioRoom, scene, canvases: { back: $('qg-room'), front: $('qg-room-front') }, prefix: 'studio',
+    theme: studioTheme, labels: { the: 'le studio', of: 'du studio' },
+    character: $('qg-character'), pet: $('qg-pet'), walkers: true, actions: actions.studio, toast: (text) => toast(text),
+    describe, onPet: () => actions.petPet(),
+  });
+  const serre = createRoomView(data, {
+    room: serreRoom, scene: $('serre'), canvases: { back: $('serre-room'), front: $('serre-room-front') }, prefix: 'serre',
+    theme: serreTheme, labels: { the: 'la serre', of: 'de la serre' },
+    character: $('serre-character'), actions: actions.serre, toast: (text) => toast(text), describe,
+  });
   for (const s of scenes) observer.observe(s);
   fitScenes();
-
-  // Emplacements des plants dans la serre (en pixels du décor) : table du fond, puis bac de devant.
-  const PLANT_SLOTS = [
-    ...Array.from({ length: 7 }, (_, i) => [8 + i * 17, 25]),
-    ...Array.from({ length: 6 }, (_, i) => [6 + i * 18, 57]),
-  ];
-  let plantCount = -1;
 
   // ---- La carte : liens entre territoires, marqueurs, liste ----
   const territories = data.map.territories;
@@ -393,6 +415,8 @@ export function createGameView(data, actions, fx) {
 
   function update(state) {
     lastState = state;
+    studio.update(state);
+    serre.update(state);
     const mods = getModifiers(state, data);
     const tier = data.tiers[state.tierIndex];
     const nextTier = data.tiers[state.tierIndex + 1];
@@ -591,23 +615,7 @@ export function createGameView(data, actions, fx) {
       row.owned.textContent = level > 0 ? `niv. ${level}` : '';
       updateCost(row, { cost: strainCost(row.def, level), wallet: state.grams, resource: 'grams', format: formatGrams });
     }
-
-    // Un plant par équipement acheté (jusqu'à remplir la serre), qui pousse en boucle.
-    const equipped = Object.values(state.equipment).reduce((a, b) => a + b, 0);
-    const count = Math.min(PLANT_SLOTS.length, equipped);
-    if (count !== plantCount) {
-      plantCount = count;
-      $('serre-plants').replaceChildren(...PLANT_SLOTS.slice(0, count).map(([x, y]) => {
-        const plant = el('div', 'plant');
-        plant.style.left = `${(x / 160) * 100}%`;
-        plant.style.top = `${y}%`;
-        return plant;
-      }));
-    }
-    const now = performance.now() / 1000;
-    [...$('serre-plants').children].forEach((plant, i) => {
-      plant.dataset.stage = String(Math.floor(now / 6 + i * 1.7) % 3);
-    });
+    // L'équipement et les variétés sont dans la serre isométrique (room-view.js).
   }
 
   function updateCost(row, { cost, wallet, unlocked = true, done = false, resource = 'money', format = formatMoney }) {
@@ -626,24 +634,17 @@ export function createGameView(data, actions, fx) {
   }
 
   function renderQg(state) {
-    const character = data.characters.find((c) => c.id === state.characterId);
+    const character = characterOf(state, data); // préfait ou créé par le joueur
+    const sheet = sheetUrl(data, character.id);
     for (const id of ['hud-face', 'career-face']) {
       $(id).dataset.character = character.id;
-      $(id).style.backgroundImage = `url("assets/images/personnages/${character.id}-sheet.png")`;
+      $(id).style.backgroundImage = sheet ? `url("${sheet}")` : '';
     }
     $('career-name').textContent = `${character.name} · ${character.strength}`;
     const fallback = el('div', 'qg-character-fallback', character.name[0]);
-    $('qg-character').replaceChildren(spriteOr(character.id, character.name, fallback));
-    $('serre-character').replaceChildren(spriteOr(character.id, character.name, fallback.cloneNode(true)));
-    const items = data.upgrades
-      .filter((u) => state.upgrades[u.id])
-      .map((u) => {
-        const item = el('div', 'sticker');
-        item.title = u.name;
-        item.append(imageOr(`assets/images/qg/${u.id}.png`, u.name, document.createTextNode(u.name)));
-        return item;
-      });
-    $('qg-items').replaceChildren(...items);
+    $('qg-character').replaceChildren(spriteOr(sheet, character.name, fallback));
+    $('serre-character').replaceChildren(spriteOr(sheet, character.name, fallback.cloneNode(true)));
+    // Les objets achetés sont dans la pièce isométrique (studio-view.js).
 
     // L'animal de compagnie, assis à côté du personnage et tourné vers lui.
     const pet = (data.pets ?? []).find((p) => p.id === state.companion && petLevel(state, p.id) > 0);
@@ -795,7 +796,7 @@ export function createGameView(data, actions, fx) {
   };
 
   return {
-    update, showMessage, showEvent, setFansTrend, setSaveStatus, setSoundLabel, announceGreenhouse, announceMap, setScene, openSheet, closeSheet,
+    update, showMessage, showEvent, studio, setFansTrend, setSaveStatus, setSoundLabel, announceGreenhouse, announceMap, setScene, openSheet, closeSheet,
     beatButton, harvestButton, showButton, anchors,
   };
 }

@@ -1,0 +1,142 @@
+/* Écran « Créer mon perso » (src/ui/creator-view.js) : téléphone d'abord, centré sur ordinateur.
+   Reprend le papier, l'encre et les ombres franches de style.css. */
+
+/* La carte « Créer mon perso » dans l'écran de choix */
+.character-card-create { --stage: var(--night-3); border-style: dashed; }
+.character-create-icon { align-self: center; font-size: 3.4rem; line-height: 1; filter: drop-shadow(3px 3px 0 var(--shadow)); }
+
+.creator {
+  display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 520px; min-height: 100vh;
+  margin: 0 auto; padding: 12px 16px calc(96px + env(safe-area-inset-bottom));
+}
+
+.creator-head { display: flex; align-items: center; gap: 8px; }
+.creator-icon {
+  display: grid; place-items: center; width: 40px; height: 40px; flex: none; padding: 0; cursor: pointer;
+  font-size: 1.2rem; font-weight: 700; background: var(--paper); color: var(--ink);
+  border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--shadow);
+}
+.creator-steps { display: flex; flex: 1; min-width: 0; margin: 0; padding: 0; list-style: none; }
+.creator-steps li { flex: 1; min-width: 0; }
+.creator-steps button {
+  width: 100%; padding: 8px 0; cursor: pointer; font: 700 .6rem var(--font-label); text-transform: uppercase; letter-spacing: -.03em;
+  background: var(--night-2); color: #b9a8c9; border: 2px solid var(--ink); border-right-width: 0;
+}
+.creator-steps li:last-child button { border-right-width: 2px; }
+.creator-steps button.is-on { background: var(--lamp); color: var(--ink); }
+.creator-dice {
+  flex: none; padding: 8px 8px; cursor: pointer; font: 700 .68rem var(--font-label); text-transform: uppercase;
+  background: var(--pink); color: var(--ink); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--shadow);
+}
+
+/* L'aperçu du perso, sur une petite scène : reste en haut pendant qu'on fait défiler les choix */
+.creator-stage {
+  position: sticky; top: 0; z-index: 4;
+  display: grid; place-items: end center; height: 176px; padding-bottom: 8px;
+  border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--shadow);
+  background:
+    radial-gradient(ellipse 30% 8% at 50% 92%, rgba(0, 0, 0, .3), transparent),
+    repeating-linear-gradient(45deg, transparent 0 10px, rgba(255, 255, 255, .1) 10px 20px),
+    var(--night-3);
+}
+.creator-preview { width: 106px; height: 159px; image-rendering: pixelated; }
+@media (min-height: 860px) {
+  .creator-stage { height: 214px; }
+  .creator-preview { width: 128px; height: 192px; }
+}
+.creator-turn { position: absolute; right: 8px; bottom: 8px; }
+.creator-badge {
+  position: absolute; left: 8px; top: 8px; margin: 0; padding: 3px 8px; font: 700 .75rem var(--font-label);
+  background: var(--lamp); color: var(--ink); border: 2px solid var(--ink); transform: rotate(-3deg);
+}
+
+.creator-body { padding: 14px 12px; }
+.creator-step { display: flex; flex-direction: column; gap: 8px; }
+.creator-step .card-title { margin-bottom: 4px; align-self: flex-start; }
+.creator-title-gap { margin-top: 14px !important; }
+.creator-sub { margin: 8px 0 0; font: .7rem var(--font-label); color: var(--ink-soft); text-transform: uppercase; }
+.creator-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.creator-wide { justify-content: center; margin-top: 10px; }
+
+/* Une pièce du look : ◀ valeur ▶ 🎲 */
+.creator-piece { display: grid; grid-template-columns: 74px 36px minmax(0, 1fr) 36px 36px; align-items: center; gap: 4px; }
+.creator-piece-label { font: .66rem var(--font-label); text-transform: uppercase; }
+.creator-piece-value {
+  overflow: hidden; padding: 6px 4px; text-align: center; white-space: nowrap; text-overflow: ellipsis;
+  font-weight: 700; background: var(--paper-2); border: 2px solid var(--ink);
+}
+.creator-arrow {
+  display: grid; place-items: center; width: 36px; height: 36px; padding: 0; cursor: pointer;
+  font-weight: 700; font-size: 1rem; background: var(--paper-2); color: var(--ink); border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.creator-arrow:active { transform: translate(2px, 2px); box-shadow: none; }
+.creator-arrow:disabled { opacity: .35; cursor: not-allowed; transform: none; box-shadow: 2px 2px 0 var(--ink); }
+.creator-arrow-dice { background: var(--pink); }
+
+.creator-extras, .creator-color-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.creator-toggle, .creator-color-tab, .creator-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; cursor: pointer; font-size: .9rem;
+  background: var(--paper-2); color: var(--ink); border: 2px solid var(--ink);
+}
+.creator-toggle.is-on, .creator-color-tab.is-on { background: var(--ink); color: var(--paper); }
+.creator-chip { background: var(--paper-3); font-weight: 700; }
+.creator-chip:disabled { opacity: .45; cursor: not-allowed; }
+.creator-dot { width: 14px; height: 14px; border: 2px solid var(--ink); }
+.creator-color-tab.is-on .creator-dot { border-color: var(--paper); }
+.creator-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 6px; }
+.creator-swatch { aspect-ratio: 1; padding: 0; cursor: pointer; border: 2px solid var(--ink); }
+.creator-swatch.is-on { outline: 3px solid var(--sunset); outline-offset: 1px; }
+
+/* Talents */
+.creator-points {
+  display: flex; align-items: baseline; gap: 10px; padding: 8px 12px;
+  background: var(--lcd); color: var(--lcd-text); border: 3px solid var(--ink);
+}
+.creator-points-value { font: 700 2rem var(--font-label); line-height: 1; }
+.creator-points-label { font: .75rem var(--font-label); text-transform: uppercase; }
+.creator-skill {
+  display: grid; grid-template-columns: minmax(0, 1fr) 36px auto 36px; align-items: center; gap: 6px;
+  padding: 6px 0; border-bottom: 2px dashed var(--paper-3);
+}
+.creator-skill-text { min-width: 0; }
+.creator-skill-name { margin: 0; font-weight: 700; }
+.creator-skill-effect { margin: 0; font-size: .82rem; color: var(--ink-soft); }
+.creator-skill-effect.is-on { color: var(--weed-dark); font-weight: 700; }
+.creator-pips { display: flex; gap: 3px; }
+.creator-pip { width: 9px; height: 16px; background: var(--paper-3); border: 2px solid var(--ink); }
+.creator-pip.is-on { background: var(--weed); }
+
+.creator-traits { display: grid; gap: 8px; }
+.creator-trait {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px 12px; cursor: pointer; text-align: left;
+  background: var(--paper-2); color: var(--ink); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink);
+}
+.creator-trait.is-on { background: var(--lamp); transform: translate(-1px, -2px) rotate(-.6deg); box-shadow: 5px 5px 0 var(--ink); }
+.creator-trait-name { font: 700 .95rem var(--font-label); }
+.creator-trait-desc { font-size: .85rem; color: var(--ink-soft); }
+.creator-trait-points { padding: 1px 6px; font-size: .8rem; font-weight: 700; background: var(--weed); border: 2px solid var(--ink); }
+.creator-effects { margin: 2px 0 0; padding: 0; list-style: none; font-size: .85rem; font-weight: 700; }
+.creator-effects .is-good, .character-effects li { color: var(--weed-dark); }
+.creator-effects .is-bad, .character-effects li.is-bad { color: var(--danger); }
+
+/* Nom et carte */
+.creator-name-row { display: flex; align-items: flex-end; gap: 8px; }
+.creator-name-field { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
+.creator-name-field .creator-sub { margin: 0; }
+.creator-name-input {
+  width: 100%; padding: 8px 10px; font: 700 1.2rem var(--font); color: var(--ink);
+  background: var(--paper-2); border: 3px solid var(--ink);
+}
+.creator-error { min-height: 1.2em; margin: 0; font-size: .85rem; font-weight: 700; color: var(--danger); }
+.creator-card-slot { display: flex; justify-content: center; padding: 14px 10px 8px; background: var(--night); border: 2px solid var(--ink); }
+.creator-card { cursor: default; }
+
+/* Barre du bas, toujours sous le pouce */
+.creator-foot {
+  position: fixed; left: 50%; bottom: 0; z-index: 5; display: flex; gap: 10px; width: 100%; max-width: 520px;
+  padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  background: linear-gradient(transparent, var(--night) 30%);
+}
+.creator-foot .btn { justify-content: center; margin-top: 0; }
+.creator-foot #creator-prev[hidden] + #creator-next { flex: 1; }

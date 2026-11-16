@@ -5,6 +5,8 @@ import { SAVE_VERSION, createState } from './state.js';
 import { getModifiers } from './modifiers.js';
 import { rawBeatsPerSecond, beatValue } from './economy.js';
 import { addGrams, gramsPerSecond } from './greenhouse.js';
+import { repairStudio, serreRoom } from './studio.js';
+import { isCustomId, repairBuild } from './creation.js';
 
 export const SAVE_KEY = 'clicker-du-qg/save';
 
@@ -25,13 +27,16 @@ export function deserialize(text, data) {
     return null;
   }
   if (!saved || typeof saved !== 'object' || saved.version !== SAVE_VERSION) return null;
-  if (!data.characters.some((c) => c.id === saved.characterId)) return null;
+  const custom = isCustomId(saved.characterId);
+  if (!custom && !data.characters.some((c) => c.id === saved.characterId)) return null;
 
   const state = createState(data, saved.characterId, saved.lastSeen);
   for (const key of Object.keys(state)) {
     if (key in saved && typeof saved[key] === typeof state[key]) state[key] = saved[key];
   }
   state.tierIndex = Math.min(state.tierIndex, data.tiers.length - 1);
+  // Perso créé : talents et signe particulier relus et réparés (jamais de points en trop).
+  state.custom = custom ? repairBuild(saved.custom, data.creation) : null;
   // Événements : champs manquants (vieille sauvegarde) ou d'un mauvais type → valeurs par défaut.
   const events = createState(data, saved.characterId).events;
   for (const key of Object.keys(events)) {
@@ -41,6 +46,10 @@ export function deserialize(text, data) {
   }
   if (events.pending && !data.events?.list.some((e) => e.id === events.pending)) events.pending = '';
   state.events = events;
+  // Plans du studio et de la serre : absents dans une vieille sauvegarde (sync installera
+  // alors les objets déjà possédés), réparé s'il est abîmé.
+  state.studio = repairStudio(saved.studio, state, data);
+  state.serre = serreRoom.repair(saved.serre, state, data);
   return state;
 }
 

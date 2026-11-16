@@ -5,6 +5,7 @@
 
 import { formatDuration, formatMoney, formatNumber } from '../game/index.js';
 import { isPlayingNow } from '../online/rules.js';
+import { characterLabel, sheetUrl } from './sprites.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -19,21 +20,23 @@ function el(tag, className, text) {
 export function face(data, characterId) {
   const node = el('span', 'board-face');
   node.dataset.character = characterId;
-  if (data.characters.some((c) => c.id === characterId)) {
-    node.style.backgroundImage = `url("assets/images/personnages/${characterId}-sheet.png")`;
-  }
+  const character = data.characters.find((c) => c.id === characterId);
+  if (character?.color) node.style.setProperty('--stage', character.color);
+  const sheet = sheetUrl(data, characterId); // préfait, ou perso créé dessiné à partir de son id
+  if (sheet) node.style.backgroundImage = `url("${sheet}")`;
   return node;
 }
 
 /** Le personnage en pied (vue de face qui respire), ou sa tête si l'image manque. */
 function fullBody(data, characterId) {
-  const character = data.characters.find((c) => c.id === characterId);
-  if (!character) return face(data, characterId);
+  const label = characterLabel(data, characterId);
+  const sheet = sheetUrl(data, characterId);
+  if (!label || !sheet) return face(data, characterId);
   const sprite = el('div', 'sprite');
   sprite.setAttribute('role', 'img');
-  sprite.setAttribute('aria-label', character.name);
+  sprite.setAttribute('aria-label', label.name);
   sprite.style.setProperty('--s', 2);
-  sprite.style.backgroundImage = `url("assets/images/personnages/${character.id}-sheet.png")`;
+  sprite.style.backgroundImage = `url("${sheet}")`;
   return sprite;
 }
 
@@ -260,6 +263,7 @@ export function createLeaderboardView(data, lb, { goToBoard, openSheet = () => {
     // Le personnage, son animal, son nom, son palier.
     const stage = el('div', 'artist-stage');
     stage.dataset.character = characterId;
+    if (character?.color) stage.style.setProperty('--stage', character.color);
     stage.append(fullBody(data, characterId));
     const companion = live?.companion && live.pets[live.companion] ? (data.pets ?? []).find((p) => p.id === live.companion) : null;
     if (companion) stage.append(petSprite(companion));
@@ -270,7 +274,8 @@ export function createLeaderboardView(data, lb, { goToBoard, openSheet = () => {
     if (isMe) name.append(el('span', 'artist-you', 'toi'));
     id.append(name);
     if (current) id.append(el('p', 'artist-tier', `${tierName(tierIndex)} · palier ${tierIndex + 1}/${data.tiers.length}`));
-    if (character) id.append(el('p', 'artist-meta', `${character.name} · ${character.strength}`));
+    const label = characterLabel(data, characterId);
+    if (label) id.append(el('p', 'artist-meta', `${label.name} · ${label.strength}`));
     if (live) {
       const playing = isPlayingNow(live.updatedAt);
       id.append(el('p', `artist-presence${playing ? ' is-playing' : ''}`, playing ? '● en jeu en ce moment' : `vu ${ago(live.updatedAt)}`));

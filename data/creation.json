@@ -1,0 +1,40 @@
+{
+  "points": 10,
+  "maxPerSkill": 5,
+  "skills": [
+    { "id": "flow", "name": "Flow", "icon": "👆", "stat": "click", "perPoint": 0.08, "description": "Plus de beats à chaque tap." },
+    { "id": "prod", "name": "Prod", "icon": "🎛️", "stat": "bps", "perPoint": 0.06, "description": "Le studio tourne plus vite tout seul." },
+    { "id": "melodie", "name": "Mélodie", "icon": "🎹", "stat": "beatValue", "perPoint": 0.05, "description": "Chaque beat rapporte plus." },
+    { "id": "charisme", "name": "Charisme", "icon": "🎤", "stat": "fanGain", "perPoint": 0.06, "description": "Plus de fans par beat." },
+    { "id": "fidelite", "name": "Fidélité", "icon": "🤝", "stat": "churn", "perPoint": -0.06, "description": "Les fans restent plus longtemps." },
+    { "id": "zen", "name": "Zen", "icon": "🧘", "stat": "cannabisDecay", "perPoint": -0.08, "description": "Le gros beat dure plus longtemps." },
+    { "id": "main-verte", "name": "Main verte", "icon": "🌱", "stat": "grow", "perPoint": 0.1, "description": "La serre pousse plus vite." },
+    { "id": "reseau", "name": "Réseau", "icon": "🗺️", "stat": "hype", "perPoint": 0.06, "description": "Les territoires tombent plus vite." }
+  ],
+  "traits": {
+    "offer": 3,
+    "rerolls": 1,
+    "list": [
+      { "id": "couche-tard", "name": "Couche-tard", "description": "Le studio tourne la nuit, mais tu dors pendant les shows.", "effects": [{ "stat": "bps", "multiply": 1.15 }, { "stat": "fanGain", "multiply": 0.92 }] },
+      { "id": "perfectionniste", "name": "Perfectionniste", "description": "Chaque beat est léché, mais ça prend du temps.", "effects": [{ "stat": "beatValue", "multiply": 1.15 }, { "stat": "click", "multiply": 0.9 }] },
+      { "id": "fetard", "name": "Fêtard", "description": "Le gros beat frappe fort, et il repart aussi vite.", "effects": [{ "stat": "cannabisPower", "multiply": 1.25 }, { "stat": "cannabisDecay", "multiply": 1.2 }] },
+      { "id": "influenceur", "name": "Influenceur", "description": "Tout le monde te suit, personne ne reste.", "effects": [{ "stat": "fanGain", "multiply": 1.15 }, { "stat": "churn", "multiply": 1.15 }] },
+      { "id": "pouce-vert", "name": "Pouce vert", "description": "Plus de temps dans la serre qu'au studio.", "effects": [{ "stat": "grow", "multiply": 1.3 }, { "stat": "bps", "multiply": 0.93 }] },
+      { "id": "globe-trotter", "name": "Globe-trotter", "description": "Toujours sur la route, jamais au QG.", "effects": [{ "stat": "hype", "multiply": 1.25 }, { "stat": "beatValue", "multiply": 0.95 }] },
+      { "id": "touche-a-tout", "name": "Touche-à-tout", "description": "Un peu de tout, pas encore de signature.", "points": 2, "effects": [{ "stat": "beatValue", "multiply": 0.92 }] },
+      { "id": "prodige", "name": "Prodige", "description": "Un talent fou, et un ego qui fait fuir les fans.", "points": 3, "effects": [{ "stat": "churn", "multiply": 1.2 }] },
+      { "id": "radin", "name": "Radin", "description": "Tu négocies tout, même ton image.", "effects": [{ "stat": "cannabisPrice", "multiply": 0.8 }, { "stat": "fanGain", "multiply": 0.95 }] },
+      { "id": "insomniaque", "name": "Insomniaque", "description": "Les doigts toujours sur le pad, la tête jamais posée.", "effects": [{ "stat": "click", "multiply": 1.15 }, { "stat": "cannabisDecay", "multiply": 1.15 }] },
+      { "id": "vieille-ecole", "name": "Vieille école", "description": "Un public fidèle, qui ne voyage pas.", "effects": [{ "stat": "churn", "multiply": 0.85 }, { "stat": "hype", "multiply": 0.9 }] }
+    ]
+  },
+  "names": {
+    "first": ["DJ", "MC", "Lil", "Young", "Big", "Doc", "Saint", "Kid", "Prince", "Madame", "Capitaine", "Ti-"],
+    "last": ["Béton", "Sous-sol", "Vinyle", "Basse", "Néon", "Caribou", "Poutine", "Sirop", "Cassette", "Tuque", "Brume", "Ciment", "Patio", "Hiver", "Lofi", "Chalet", "Érable", "Gravier"]
+  },
+  "palettes": {
+    "skin": ["#f6d7bd", "#f1c6a4", "#e0b08a", "#c98e65", "#a8704a", "#8d5a3b", "#6b4229", "#4a2c1c", "#f3cfb3", "#b07a52"],
+    "hair": ["#1a1410", "#2f221b", "#3a2a20", "#5a3d27", "#7a5536", "#a07a52", "#c9973f", "#e2c27a", "#b3412f", "#8a8a8a", "#e8e4dc", "#ff7eb6", "#4f86ff", "#7bd389"],
+    "cloth": ["#1e1f25", "#2b2b31", "#4a4a54", "#f4f1ea", "#e8e4dc", "#b9b4a8", "#d94f3d", "#ff8a5b", "#ffd166", "#c9973f", "#7a4b2a", "#5f6751", "#2a6b4a", "#7bd389", "#9fc2e0", "#4b6aa8", "#4f86ff", "#2a3558", "#5b4b8a", "#ff7eb6", "#cdbf9f", "#dcc9a5"]
+  }
+}

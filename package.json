@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node scripts/serve.js",
     "test": "node --test",
-    "sprites": "node scripts/sprites/build.js"
+    "sprites": "node scripts/sprites/build.js",
+    "atelier": "node scripts/atelier.js"
   }
 }

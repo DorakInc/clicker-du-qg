@@ -9,8 +9,8 @@
   },
   "sideFacing": "right",
   "sheets": {
+    "xavier": "xavier-sheet.png",
     "nathan": "nathan-sheet.png",
-    "emile": "emile-sheet.png",
-    "xavier": "xavier-sheet.png"
+    "emile": "emile-sheet.png"
   }
 }

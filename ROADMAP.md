@@ -11,6 +11,8 @@ Le jeu doit toujours avoir une couche de plus à débloquer, et devenir une comp
 
 ## Prochaines étapes
 
+La préparation détaillée des prochaines phases (éditeur de studio isométrique, nouveaux personnages par photo T-pose, mode arcade, sons maison) est dans [docs/prochaines-phases.md](docs/prochaines-phases.md).
+
 ### 1. Leaderboard en ligne (Supabase choisi)
 
 **Construit** (voir [supabase/README.md](supabase/README.md)) : onglet 🏆 Classement, profil pseudo + code à 4 chiffres, envoi automatique du score (argent total gagné + palier), classement en direct, pastille de rang dans l'en-tête, messages « tu montes au #2 » / « X vient de te dépasser » dans QGram. Base, règles de sécurité et fonctions dans `supabase/migrations/`. Essai sans compte : `?classement=demo`.
