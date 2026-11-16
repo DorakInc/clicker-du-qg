@@ -205,3 +205,26 @@ body.has-sheet { overflow: hidden; }
 .stage .show-btn { width: min(38vw, 160px); height: min(38vw, 160px); }
 .stage .show-mic { font-size: 3rem; margin-top: -14px; }
 .stage .show-btn .harvest-label { bottom: 16%; font-size: .8rem; }
+
+/* ---- Événements à la BitLife ---- */
+.sheet-event .sheet-head { background: var(--lamp); }
+.sheet-event[data-tone="bad"] .sheet-head { background: var(--danger); color: var(--paper-2); }
+.sheet-event[data-tone="good"] .sheet-head { background: var(--weed); }
+.event-card { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px; }
+.event-icon {
+  display: grid; place-items: center; width: 74px; height: 74px; font-size: 2.6rem;
+  background: var(--paper-2); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); transform: rotate(-4deg);
+}
+.event-text { margin: 0; font-size: 1.05rem; line-height: 1.35; }
+.event-changes { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; padding: 0; }
+.event-changes:empty { display: none; }
+.event-changes li { padding: 4px 10px; font: 700 .85rem var(--font-label); background: var(--paper-2); border: 2px solid var(--ink); }
+.event-changes li.is-down { color: var(--paper-2); background: var(--danger); }
+.event-changes li.is-up { background: var(--weed); }
+.event-choices { display: flex; flex-direction: column; margin-top: 4px; }
+.event-choices .btn { justify-content: center; text-align: center; color: var(--ink); background: var(--paper-2); }
+.event-choices .btn.btn-ok { background: var(--sunset); }
+.hud-effects { display: contents; }
+.stat-effect { color: var(--ink); background: var(--lamp); }
+.stat-effect.is-down { color: var(--paper-2); background: var(--danger); }
+.stat-effect .stat-label { color: inherit; }

@@ -36,4 +36,4 @@ Le jeu doit toujours avoir une couche de plus à débloquer, et devenir une comp
 
 - **Prestige — la station lunaire** : tout recommencer en échange d'étoiles qui donnent un bonus permanent. Rend le jeu rejouable et rend le leaderboard plus intéressant.
 - **Le label** : signer d'autres artistes qui produisent pour toi.
-- **Événements** : tournée, battle, panne de courant au QG, visite de la police (absurde).
+- ~~**Événements**~~ : fait (13 événements à la BitLife dans `data/events.json` : police, impôts, panne, voisin, clash, beat viral…). Idées pour la suite : battle de rap, tournée, événements liés aux territoires de la carte.

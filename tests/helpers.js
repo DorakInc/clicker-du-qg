@@ -16,6 +16,7 @@ export function loadData() {
     map: read('map'),
     fx: read('fx'),
     online: read('online'),
+    events: read('events'),
   };
 }
 

@@ -10,6 +10,7 @@ Une seule personne de l'équipe le fait.
 
 1. Créer un compte gratuit sur [supabase.com](https://supabase.com), puis **New project**. Nom : `clicker-du-qg` ; région : `Canada (Central)` ou la plus proche. Garder le mot de passe de la base dans un gestionnaire de mots de passe (le jeu n'en a pas besoin).
 2. Dans le projet : **SQL Editor** → **New query** → coller tout le fichier [`migrations/20261115000000_classement.sql`](migrations/20261115000000_classement.sql) → **Run**. Le message doit être « Success. No rows returned ». Le fichier peut être relancé sans danger.
+   Puis, de la même façon, coller et lancer [`migrations/20261116000000_sauvegarde.sql`](migrations/20261116000000_sauvegarde.sql) : la **sauvegarde en ligne** (la partie suit le pseudo et son code d'un appareil à l'autre). Sans ce fichier, le classement marche mais le jeu affiche « Sauvegarde en ligne pas encore activée ».
 3. **Project Settings → API** (ou **Connect**) : copier
    - l'**URL du projet** (`https://xxxx.supabase.co`) ;
    - la clé **publique** : `anon` / `public`, ou `sb_publishable_…` sur les projets récents.
@@ -30,6 +31,8 @@ La clé publique peut être dans le dépôt et dans le navigateur : c'est prévu
 | `scores` | meilleure partie de chaque joueur : argent total gagné, palier, fans, territoires, personnage | lecture seule |
 | `join_leaderboard(pseudo, code)` | crée le pseudo, ou s'y reconnecte avec le bon code | appel |
 | `submit_score(...)` | vérifie le code et enregistre le score s'il bat le record | appel |
+| `saves` | la partie en cours de chaque joueur (sauvegarde en ligne), avec un numéro de révision | aucun (illisible) |
+| `load_game(pseudo, code)` / `save_game(...)` | reprendre ou sauvegarder sa partie ; si un autre appareil a sauvegardé entre-temps, répond « conflict » et le jeu demande quelle partie garder | appel |
 
 Règles appliquées par le serveur :
 - pseudo de 2 à 16 caractères (lettres, accents, chiffres, espace, `.` `-` `_`), unique sans tenir compte des majuscules ;

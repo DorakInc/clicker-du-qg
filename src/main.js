@@ -5,16 +5,16 @@
 import {
   SAVE_KEY, applyOffline, buyCannabis, buyEquipment, buyProducer, buyStrain, buyUpgrade, click,
   createState, deserialize, formatDuration, formatMoney, formatNumber, giveSamples, harvest, playShow,
-  rollJoint, runPromo, serialize, startCampaign, tick,
+  resolveEvent, rollJoint, runPromo, serialize, startCampaign, tick, triggerEvent,
 } from './game/index.js';
 import { createGameView, showCharacterSelect } from './ui/view.js';
 import { createAudio } from './audio/audio.js';
 import { createFx } from './ui/fx/fx.js';
 import { createMotion, MOTION_MODES } from './ui/fx/motion.js';
-import { createLeaderboard } from './online/leaderboard.js';
+import { PROFILE_KEY, createLeaderboard } from './online/leaderboard.js';
 import { createLeaderboardView } from './ui/leaderboard-view.js';
 
-const DATA_FILES = ['balance', 'characters', 'producers', 'upgrades', 'tiers', 'texts', 'sounds', 'greenhouse', 'map', 'fx', 'online'];
+const DATA_FILES = ['balance', 'characters', 'producers', 'upgrades', 'tiers', 'texts', 'sounds', 'greenhouse', 'map', 'fx', 'online', 'events'];
 const MOTION_LABELS = { auto: 'Animations : auto', reduced: 'Animations : réduites', full: 'Animations : complètes' };
 const SETTINGS_KEY = 'clicker-du-qg/settings';
 const RENDER_INTERVAL = 1 / 15; // l'affichage est rafraîchi 15 fois par seconde
@@ -170,7 +170,8 @@ function startGame(data, state, { audio, settings, motion, offline }) {
     buyProducer: (id) => handle(buyProducer(state, data, id)),
     buyUpgrade: (id) => handle(buyUpgrade(state, data, id)),
     reset() {
-      if (!confirm('Recommencer une nouvelle partie ? La progression actuelle sera perdue.')) return;
+      const online = storage.get(PROFILE_KEY) ? ' Tu es connecté : la partie en ligne sera aussi remplacée (ton record au classement reste).' : '';
+      if (!confirm(`Recommencer une nouvelle partie ? La progression actuelle sera perdue.${online}`)) return;
       resetting = true;
       storage.remove(SAVE_KEY);
       location.reload();
@@ -197,31 +198,79 @@ function startGame(data, state, { audio, settings, motion, offline }) {
 
   // ---- Classement en ligne (src/online/) ----
   // ?classement=demo : faux serveur en mémoire, pour essayer sans compte Supabase.
+  // Le pseudo + code portent aussi la sauvegarde en ligne : la partie suit le joueur d'un appareil à l'autre.
   const leaderboard = createLeaderboard({
     config: data.online,
     storage,
     demo: new URLSearchParams(location.search).get('classement') === 'demo',
     onMessage: (text, kind = '') => view.showMessage(text, kind),
+    getSaveText: () => {
+      state.lastSeen = Date.now();
+      return serialize(state);
+    },
+    isValidSave: (saved) => deserialize(JSON.stringify(saved), data) !== null,
+    onLoadSave(text) {
+      // Reprendre la partie en ligne : on remplace la sauvegarde locale et on relance le jeu.
+      resetting = true;
+      storage.set(SAVE_KEY, text);
+      location.reload();
+    },
   });
-  createLeaderboardView(data, leaderboard, { goToBoard: () => view.setScene('classement') });
+  createLeaderboardView(data, leaderboard, {
+    goToBoard: () => view.setScene('classement'),
+    openSheet: (id) => view.openSheet(id),
+    closeSheet: () => view.closeSheet(),
+  });
   leaderboard.start(() => state);
   };
   showMotion();
 
   // ---- Classement en ligne (src/online/) ----
   // ?classement=demo : faux serveur en mémoire, pour essayer sans compte Supabase.
+  // Le pseudo + code portent aussi la sauvegarde en ligne : la partie suit le joueur d'un appareil à l'autre.
   const leaderboard = createLeaderboard({
     config: data.online,
     storage,
     demo: new URLSearchParams(location.search).get('classement') === 'demo',
     onMessage: (text, kind = '') => view.showMessage(text, kind),
+    getSaveText: () => {
+      state.lastSeen = Date.now();
+      return serialize(state);
+    },
+    isValidSave: (saved) => deserialize(JSON.stringify(saved), data) !== null,
+    onLoadSave(text) {
+      // Reprendre la partie en ligne : on remplace la sauvegarde locale et on relance le jeu.
+      resetting = true;
+      storage.set(SAVE_KEY, text);
+      location.reload();
+    },
   });
-  createLeaderboardView(data, leaderboard, { goToBoard: () => view.setScene('classement') });
+  createLeaderboardView(data, leaderboard, {
+    goToBoard: () => view.setScene('classement'),
+    openSheet: (id) => view.openSheet(id),
+    closeSheet: () => view.closeSheet(),
+  });
   leaderboard.start(() => state);
+
+  /** Réponse du joueur à une question d'événement (police, voisin...). */
+  function chooseEvent(index) {
+    handle(resolveEvent(state, data, index));
+  }
 
   function handle(events) {
     for (const event of events) {
       audio.play(event.type);
+      if (event.type === 'event' || event.type === 'eventPrompt' || event.type === 'eventResult') {
+        view.showEvent(event, chooseEvent);
+        const def = data.events.list.find((e) => e.id === event.id);
+        if (event.type !== 'eventPrompt') {
+          view.showMessage(`${def.icon} ${def.title} : ${event.text}`, event.tone === 'bad' ? 'danger' : '');
+        }
+      }
+      if (event.type === 'eventEnd') {
+        const def = data.events.list.find((e) => e.id === event.id);
+        if (def) view.showMessage(`${def.icon} Fin de l'effet : ${def.title.toLowerCase()}.`);
+      }
       fx.onGameEvent(event);
       if (event.type === 'tierUp') leaderboard.requestSubmit();
       if (event.type === 'greenhouseUnlock') view.announceGreenhouse();
@@ -257,6 +306,12 @@ function startGame(data, state, { audio, settings, motion, offline }) {
   view.showMessage(message(data, 'welcome', { name: character.name }));
   showOffline(offline);
   view.update(state);
+
+  // Une question d'événement restée sans réponse (jeu fermé entre-temps) revient à l'écran.
+  if (state.events.pending) view.showEvent({ type: 'eventPrompt', id: state.events.pending }, chooseEvent);
+  // Pour essayer un événement sans attendre : ?evenement=police (voir data/events.json).
+  const forcedEvent = new URLSearchParams(location.search).get('evenement');
+  if (forcedEvent && !state.events.pending) handle(triggerEvent(state, data, forcedEvent));
 
   // ---- Boucle de jeu ----
   const { minSeconds } = data.balance.offline;
@@ -323,7 +378,10 @@ function startGame(data, state, { audio, settings, motion, offline }) {
   requestAnimationFrame(frame);
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') save();
+    if (document.visibilityState === 'hidden') {
+      save();
+      leaderboard.flush();
+    }
   });
   window.addEventListener('pagehide', save);
 }

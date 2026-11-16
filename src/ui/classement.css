@@ -78,3 +78,21 @@
 .profile-notice.is-error { background: #ffd0d0; border-color: var(--danger); }
 
 [data-motion="reduced"] .board-row.is-new { animation: none; }
+
+/* ---- Sauvegarde en ligne ---- */
+.cloud-line { margin: 6px 0 0; font: .78rem var(--font-label); }
+.cloud-line.is-ok { color: var(--weed-dark); }
+.cloud-line.is-warn { color: #b8322a; }
+.account { margin-bottom: 14px; padding: 10px 12px; background: var(--paper-2); border: 2px solid var(--ink); }
+.account-name { margin: 0; font-weight: 700; }
+.account .btn { margin-top: 10px; }
+.sync-intro { margin: 0 0 12px; }
+.sync-choices { display: grid; gap: 12px; }
+.sync-card { padding: 12px; background: var(--paper-2); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.sync-card.is-ahead { background: #fff3a3; }
+.sync-title { margin: 0 0 8px; font: 700 .95rem var(--font-label); }
+.sync-summary { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 10px; }
+.sync-summary .board-face { grid-row: span 3; }
+.sync-summary span { font-size: .9rem; }
+.sync-summary strong { font: 700 1.05rem var(--font-label); }
+.sync-card .btn { margin-top: 10px; }

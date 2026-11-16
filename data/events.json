@@ -1,0 +1,200 @@
+{
+  "firstDelaySeconds": 240,
+  "minGapSeconds": 300,
+  "maxGapSeconds": 540,
+  "minTier": 1,
+  "repeatCooldownSeconds": 1800,
+  "list": [
+    {
+      "id": "impots",
+      "icon": "🧾",
+      "title": "Les impôts",
+      "text": "Revenu Québec a trouvé ton SoundCloud. Ils prennent leur part, et leur part, c'est la moitié.",
+      "tone": "bad",
+      "weight": 3,
+      "requires": { "minTier": 2, "minMoney": 1000 },
+      "effects": [{ "type": "money", "multiply": 0.5 }]
+    },
+    {
+      "id": "police",
+      "icon": "🚓",
+      "title": "La police au QG",
+      "text": "Ça cogne fort à la porte du sous-sol. « Police ! On a reçu une plainte pour odeur suspecte. »",
+      "tone": "bad",
+      "weight": 3,
+      "requires": { "stash": true },
+      "choices": [
+        {
+          "label": "Tout cacher dans la laveuse",
+          "outcomes": [
+            { "chance": 0.6, "tone": "good", "text": "Ils ont fouillé partout sauf la laveuse. Personne ne regarde jamais dans la laveuse.", "effects": [] },
+            { "chance": 0.4, "tone": "bad", "text": "Le chien renifleur adore les laveuses. Tout le stash est saisi, plus une amende.", "effects": [{ "type": "stash", "share": 1 }, { "type": "money", "multiply": 0.8 }] }
+          ]
+        },
+        {
+          "label": "Ouvrir, poliment",
+          "outcomes": [
+            { "chance": 1, "tone": "bad", "text": "Ils repartent avec ton stash. Mais un des policiers a demandé le nom du beat qui jouait.", "effects": [{ "type": "stash", "share": 1 }, { "type": "fans", "multiply": 1.05 }] }
+          ]
+        },
+        {
+          "label": "Sortir par la fenêtre",
+          "outcomes": [
+            { "chance": 0.5, "tone": "good", "text": "Personne ne t'a vu. Tu reviens une heure plus tard, l'air innocent.", "effects": [] },
+            { "chance": 0.5, "tone": "bad", "text": "Le voisin a filmé ta sortie par la fenêtre du sous-sol. C'est un mème, maintenant.", "effects": [{ "type": "fans", "multiply": 0.85 }] }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "panne",
+      "icon": "🔌",
+      "title": "Panne de courant",
+      "text": "Tout le quartier est dans le noir. Les machines du QG tournent sur la batterie du laptop.",
+      "tone": "bad",
+      "weight": 3,
+      "requires": { "minBps": 1 },
+      "effects": [{ "type": "buff", "stat": "bps", "multiply": 0.25, "seconds": 90 }]
+    },
+    {
+      "id": "voisin",
+      "icon": "📢",
+      "title": "Le voisin d'en haut",
+      "text": "Il tape sur le plancher avec un balai. « BAISSE TES BASSES ! »",
+      "tone": "neutral",
+      "weight": 2,
+      "choices": [
+        {
+          "label": "Baisser le volume",
+          "outcomes": [
+            { "chance": 1, "tone": "bad", "text": "La paix revient, mais tes beats sonnent comme dans un ascenseur.", "effects": [{ "type": "buff", "stat": "beatValue", "multiply": 0.8, "seconds": 120 }] }
+          ]
+        },
+        {
+          "label": "Monter le volume",
+          "outcomes": [
+            { "chance": 0.5, "tone": "good", "text": "Tout l'immeuble danse. Le voisin aussi, finalement.", "effects": [{ "type": "fans", "multiply": 1.1 }] },
+            { "chance": 0.5, "tone": "bad", "text": "La ville t'envoie une amende pour bruit.", "effects": [{ "type": "money", "incomeSeconds": -90 }] }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ordi",
+      "icon": "💻",
+      "title": "L'ordi plante",
+      "text": "Écran bleu. Le projet n'était pas sauvegardé. Deux minutes de travail parties en fumée.",
+      "tone": "bad",
+      "weight": 2,
+      "requires": { "minIncome": 1 },
+      "effects": [{ "type": "money", "incomeSeconds": -120 }]
+    },
+    {
+      "id": "clash",
+      "icon": "🥊",
+      "title": "Un clash sur QGram",
+      "text": "Un rappeur du quartier te traite de « beatmaker de sous-sol » devant tout le monde.",
+      "tone": "neutral",
+      "weight": 2,
+      "requires": { "minTier": 1 },
+      "choices": [
+        {
+          "label": "Répondre avec un diss track",
+          "outcomes": [
+            { "chance": 0.5, "tone": "good", "text": "Ton diss track est violent. Tout le monde en parle.", "effects": [{ "type": "fans", "multiply": 1.2 }] },
+            { "chance": 0.5, "tone": "bad", "text": "Ton diss track rime « QG » avec « QG ». Gênant.", "effects": [{ "type": "fans", "multiply": 0.9 }] }
+          ]
+        },
+        {
+          "label": "Ignorer",
+          "outcomes": [
+            { "chance": 1, "tone": "neutral", "text": "Tu restes classe. Quelques fans trouvent ça plate.", "effects": [{ "type": "fans", "multiply": 0.97 }] }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "coloc",
+      "icon": "🛋️",
+      "title": "Le coloc",
+      "text": "Ton coloc a « emprunté » ton stash pour son party. Il dit qu'il va te remettre ça. Il ne va pas te remettre ça.",
+      "tone": "bad",
+      "weight": 2,
+      "requires": { "stash": true },
+      "effects": [{ "type": "stash", "share": 0.5 }]
+    },
+    {
+      "id": "viral",
+      "icon": "📈",
+      "title": "Ton beat devient viral",
+      "text": "Quelqu'un a fait une danse sur ton beat. Tout le monde la refait.",
+      "tone": "good",
+      "weight": 2,
+      "requires": { "minTier": 1 },
+      "effects": [{ "type": "fans", "multiply": 1.25 }, { "type": "buff", "stat": "fanGain", "multiply": 2, "seconds": 60 }]
+    },
+    {
+      "id": "placement",
+      "icon": "🥤",
+      "title": "Placement de produit",
+      "text": "Une marque de boisson énergisante veut voir sa canette dans ta prochaine vidéo.",
+      "tone": "good",
+      "weight": 2,
+      "requires": { "minIncome": 1 },
+      "effects": [{ "type": "money", "incomeSeconds": 180 }]
+    },
+    {
+      "id": "feat",
+      "icon": "🎙️",
+      "title": "Une demande de feat",
+      "text": "Un artiste qui monte veut un feat. Il faut quand même payer le studio.",
+      "tone": "neutral",
+      "weight": 2,
+      "requires": { "minTier": 1, "minMoney": 500 },
+      "choices": [
+        {
+          "label": "Accepter (10 % du cash)",
+          "outcomes": [
+            { "chance": 0.75, "tone": "good", "text": "Le feat sort et ses fans deviennent tes fans.", "effects": [{ "type": "money", "multiply": 0.9 }, { "type": "fans", "multiply": 1.15 }] },
+            { "chance": 0.25, "tone": "bad", "text": "Il a disparu avec l'avance. Classique.", "effects": [{ "type": "money", "multiply": 0.9 }] }
+          ]
+        },
+        {
+          "label": "Refuser",
+          "outcomes": [
+            { "chance": 1, "tone": "neutral", "text": "Tu préfères rester solo. Rien ne change.", "effects": [] }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "recolte",
+      "icon": "🌱",
+      "title": "Récolte miracle",
+      "text": "Les plants ont poussé d'un coup cette nuit. Personne ne sait pourquoi. Personne ne pose de questions.",
+      "tone": "good",
+      "weight": 2,
+      "requires": { "greenhouse": true },
+      "effects": [{ "type": "grams", "multiply": 1.5, "add": 50 }]
+    },
+    {
+      "id": "tournee",
+      "icon": "🚐",
+      "title": "La van est brisée",
+      "text": "En route vers le prochain show, la van de tournée rend l'âme. La campagne prend du retard.",
+      "tone": "bad",
+      "weight": 2,
+      "requires": { "campaign": true },
+      "effects": [{ "type": "hype", "multiply": 0.75 }]
+    },
+    {
+      "id": "inspiration",
+      "icon": "⚡",
+      "title": "Éclair de génie",
+      "text": "Trois heures du matin, une mélodie te tombe dessus. Tes doigts ne suivent plus.",
+      "tone": "good",
+      "weight": 2,
+      "effects": [{ "type": "buff", "stat": "click", "multiply": 3, "seconds": 45 }]
+    }
+  ]
+}

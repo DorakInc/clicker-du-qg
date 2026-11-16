@@ -32,6 +32,15 @@ export function deserialize(text, data) {
     if (key in saved && typeof saved[key] === typeof state[key]) state[key] = saved[key];
   }
   state.tierIndex = Math.min(state.tierIndex, data.tiers.length - 1);
+  // Événements : champs manquants (vieille sauvegarde) ou d'un mauvais type → valeurs par défaut.
+  const events = createState(data, saved.characterId).events;
+  for (const key of Object.keys(events)) {
+    const value = state.events?.[key];
+    const ok = Array.isArray(events[key]) ? Array.isArray(value) : typeof value === typeof events[key] && value !== null;
+    events[key] = ok ? value : events[key];
+  }
+  if (events.pending && !data.events?.list.some((e) => e.id === events.pending)) events.pending = '';
+  state.events = events;
   return state;
 }
 

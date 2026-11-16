@@ -3,7 +3,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { codeError, describeResult, isConfigured, keyProblem, pseudoError, rankIn, scoreFromState } from '../src/online/rules.js';
+import { codeError, describeResult, isConfigured, isFreshGame, keyProblem, pseudoError, rankIn, scoreFromState, summarize } from '../src/online/rules.js';
 import { createMemoryBackend } from '../src/online/backend.js';
 import { createState } from '../src/game/index.js';
 import { loadData } from './helpers.js';
@@ -75,4 +75,37 @@ test('faux serveur : mêmes règles que le SQL', async () => {
   for (const status of ['created', 'ok', 'kept', 'wrong_code', 'locked', 'too_soon', 'network']) {
     assert.equal(typeof describeResult({ status, pseudo: 'X', attempts_left: 2 }), 'string');
   }
+});
+
+test('sauvegarde en ligne : révisions et conflits (faux serveur, mêmes règles que le SQL)', async () => {
+  const server = createMemoryBackend({ rivals: [], latencyMs: 0, live: false });
+  await server.join('Testeur', '1234');
+  const me = { pseudo: 'Testeur', code: '1234' };
+  const game = (money, revision) => ({ save: { version: 1, money }, revision, totalEarned: money, tierIndex: 0, character: 'xavier' });
+
+  assert.deepEqual(await server.loadGame(me), { status: 'ok', save: null, revision: 0 });
+  assert.deepEqual(await server.saveGame(me, game(10, 0)), { status: 'ok', revision: 1 }, 'première sauvegarde');
+  assert.deepEqual(await server.saveGame(me, game(20, 1)), { status: 'ok', revision: 2 }, 'appareil à jour');
+
+  const late = await server.saveGame(me, game(5, 1));
+  assert.equal(late.status, 'conflict', 'un appareil en retard ne peut pas écraser');
+  assert.equal(late.revision, 2);
+  const loaded = await server.loadGame(me);
+  assert.equal(loaded.save.money, 20, 'la partie la plus récente est intacte');
+  assert.equal(loaded.revision, 2);
+
+  assert.equal((await server.saveGame(me, { ...game(1, 2), save: { money: 1 } })).status, 'invalid_save', 'sans version : refusée');
+  assert.equal((await server.loadGame({ pseudo: 'Testeur', code: '9999' })).status, 'wrong_code');
+  assert.equal((await server.loadGame({ pseudo: 'Inconnu', code: '1234' })).status, 'unknown_player');
+  assert.equal(typeof describeResult({ status: 'conflict' }), 'string');
+});
+
+test('choisir entre deux parties', () => {
+  const fresh = createState(data, 'xavier');
+  assert.ok(isFreshGame(fresh), 'une partie qui commence peut être remplacée sans demander');
+  assert.ok(!isFreshGame({ ...fresh, totalEarned: 5000 }), 'une partie avancée : on demande');
+  assert.ok(!isFreshGame({ ...fresh, time: 900 }), 'même pauvre, 15 minutes de jeu : on demande');
+  const s = summarize({ characterId: 'emile', totalEarned: 800, tierIndex: 1, time: 600 });
+  assert.deepEqual([s.character, s.totalEarned, s.tierIndex, s.playedSeconds], ['emile', 800, 1, 600]);
+  assert.equal(summarize({ character_id: 'nathan', total_earned: 50, tier_index: 2 }).character, 'nathan', 'résumé du serveur');
 });
