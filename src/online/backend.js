@@ -9,6 +9,9 @@
 //   top(limit)                     → lignes triées (voir rules.toRow)
 //   mine(pseudo)                   → { row, rank } ou null
 //   subscribe(onChange, onLive)    → fonction pour se désabonner
+//   loadGame({ pseudo, code })     → { status, save, revision, total_earned, tier_index, updated_at }
+//   saveGame({ pseudo, code }, { save, revision, totalEarned, tierIndex, character })
+//                                  → { status: 'ok' | 'conflict' | ..., revision }
 
 import { CODE_PATTERN, PSEUDO_PATTERN, cleanPseudo, rankIn, toRow } from './rules.js';
 
@@ -35,6 +38,16 @@ export function createSupabaseBackend(config) {
   return {
     kind: 'supabase',
     join: (pseudo, code) => rpc('join_leaderboard', { p_pseudo: pseudo, p_code: code }),
+    loadGame: ({ pseudo, code }) => rpc('load_game', { p_pseudo: pseudo, p_code: code }),
+    saveGame: ({ pseudo, code }, game) => rpc('save_game', {
+      p_pseudo: pseudo,
+      p_code: code,
+      p_save: game.save,
+      p_revision: game.revision,
+      p_total_earned: game.totalEarned,
+      p_tier_index: game.tierIndex,
+      p_character: game.character,
+    }),
     submit: ({ pseudo, code }, score) => rpc('submit_score', {
       p_pseudo: pseudo,
       p_code: code,
@@ -90,16 +103,34 @@ const RIVALS = [
   ['Sous-sol 404', 'xavier', 420, 0],
 ];
 
-/** Mêmes règles que le SQL (blocage après 5 mauvais codes, record conservé), sans réseau. */
-export function createMemoryBackend({ rivals = RIVALS, latencyMs = 250, live = true } = {}) {
+const DEMO_KEY = 'clicker-du-qg/demo-serveur';
+
+/**
+ * Mêmes règles que le SQL (blocage après 5 mauvais codes, record conservé, révisions), sans réseau.
+ * `storage` (facultatif) garde le faux serveur d'un rechargement à l'autre, pour essayer
+ * « reprendre ma partie » en démo.
+ */
+export function createMemoryBackend({ rivals = RIVALS, latencyMs = 250, live = true, storage = null } = {}) {
   const players = new Map(); // clé minuscule → { pseudo, code, fails, lockedUntil }
   const scores = new Map(); // clé minuscule → ligne brute
+  const saves = new Map(); // clé minuscule → { data, revision, total_earned, tier_index, character_id, updated_at }
+  const persist = () => storage?.set(DEMO_KEY, JSON.stringify({ players: [...players], scores: [...scores], saves: [...saves] }));
   const listeners = new Set();
   const wait = () => new Promise((resolve) => setTimeout(resolve, latencyMs));
-  const changed = () => { for (const fn of listeners) fn(); };
+  const changed = () => {
+    persist();
+    for (const fn of listeners) fn();
+  };
   const sorted = () => [...scores.values()].map(toRow).sort((a, b) => b.totalEarned - a.totalEarned);
 
-  for (const [pseudo, character, total, tier] of rivals) {
+  let restored = null;
+  try { restored = JSON.parse(storage?.get(DEMO_KEY) ?? 'null'); } catch { restored = null; }
+  if (restored) {
+    for (const [key, value] of restored.players) players.set(key, value);
+    for (const [key, value] of restored.scores) scores.set(key, value);
+    for (const [key, value] of restored.saves) saves.set(key, value);
+  }
+  for (const [pseudo, character, total, tier] of restored ? [] : rivals) {
     players.set(pseudo.toLowerCase(), { pseudo, code: '0000', fails: 0, lockedUntil: 0 });
     scores.set(pseudo.toLowerCase(), {
       pseudo, character_id: character, total_earned: total, tier_index: tier, fans: total / 30, territories: 1,
@@ -144,6 +175,7 @@ export function createMemoryBackend({ rivals = RIVALS, latencyMs = 250, live = t
       const player = players.get(key);
       if (!player) {
         players.set(key, { pseudo: name, code, fails: 0, lockedUntil: 0 });
+        persist();
         return { status: 'created', pseudo: name };
       }
       const result = check(player, code);
@@ -173,6 +205,37 @@ export function createMemoryBackend({ rivals = RIVALS, latencyMs = 250, live = t
     async top(limit) {
       await wait();
       return sorted().slice(0, limit);
+    },
+    async loadGame({ pseudo, code }) {
+      await wait();
+      const key = cleanPseudo(pseudo).toLowerCase();
+      const player = players.get(key);
+      if (!player) return { status: 'unknown_player' };
+      const result = check(player, code);
+      if (result.status !== 'ok') return result;
+      const save = saves.get(key);
+      if (!save) return { status: 'ok', save: null, revision: 0 };
+      return { status: 'ok', save: structuredClone(save.data), ...save, data: undefined };
+    },
+    async saveGame({ pseudo, code }, game) {
+      await wait();
+      const key = cleanPseudo(pseudo).toLowerCase();
+      const player = players.get(key);
+      if (!player) return { status: 'unknown_player' };
+      const result = check(player, code);
+      if (result.status !== 'ok') return result;
+      if (!game.save || typeof game.save !== 'object' || typeof game.save.version !== 'number') return { status: 'invalid_save' };
+      const current = saves.get(key);
+      if (current && current.revision !== game.revision) {
+        return { status: 'conflict', ...current, data: undefined };
+      }
+      const revision = (current?.revision ?? 0) + 1;
+      saves.set(key, {
+        data: structuredClone(game.save), revision, total_earned: game.totalEarned,
+        tier_index: game.tierIndex, character_id: game.character, updated_at: new Date().toISOString(),
+      });
+      persist();
+      return { status: 'ok', revision };
     },
     async mine(pseudo) {
       await wait();

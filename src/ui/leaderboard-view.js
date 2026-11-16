@@ -1,7 +1,7 @@
 // Affichage du classement : l'onglet « 🏆 Classement », le tableau, le profil et la
 // pastille de rang dans l'en-tête. Lit l'état de src/online/leaderboard.js.
 
-import { formatMoney } from '../game/index.js';
+import { formatDuration, formatMoney } from '../game/index.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -31,9 +31,57 @@ function ago(date) {
   return `il y a ${Math.floor(s / 86400)} j`;
 }
 
-export function createLeaderboardView(data, lb, { goToBoard }) {
+export function createLeaderboardView(data, lb, { goToBoard, openSheet = () => {}, closeSheet = () => {} }) {
   const list = $('board-list');
   const seen = new Set();
+  let shownConflict = null;
+
+  $('profile-conflict').onclick = () => openSheet('sheet-sync');
+  $('sync-keep-remote').onclick = () => {
+    closeSheet();
+    lb.resolveConflict('remote');
+  };
+  $('sync-keep-local').onclick = () => {
+    closeSheet();
+    lb.resolveConflict('local');
+  };
+  $('settings-login').onclick = () => goToBoard();
+
+  function cloudLine() {
+    const cloud = lb.cloud;
+    if (!lb.profile) return ['', ''];
+    switch (cloud.status) {
+      case 'synced': return [`☁️ Partie sauvegardée en ligne ${cloud.savedAt ? ago(cloud.savedAt) : ''}`.trim(), 'is-ok'];
+      case 'checking': return ['☁️ Vérification de ta partie en ligne…', ''];
+      case 'conflict': return ['⚠️ Deux parties trouvées : choisis laquelle garder.', 'is-warn'];
+      case 'missing': return ['☁️ Sauvegarde en ligne pas encore activée sur le serveur.', 'is-warn'];
+      case 'error': return ['☁️ Sauvegarde en ligne impossible pour le moment. On réessaie.', 'is-warn'];
+      default: return ['☁️ Ta partie part en ligne dans un instant.', ''];
+    }
+  }
+
+  function summary(target, game) {
+    const tier = data.tiers[game.tierIndex]?.name ?? '';
+    const lines = [
+      el('strong', '', formatMoney(game.totalEarned)),
+      el('span', '', `${tier}${game.playedSeconds ? ` · ${formatDuration(game.playedSeconds)} de jeu` : ''}`),
+      el('span', '', game.updatedAt ? `dernière partie ${ago(game.updatedAt)}` : ''),
+    ];
+    target.replaceChildren(face(data, game.character), ...lines);
+  }
+
+  function renderConflict() {
+    const conflict = lb.cloud.conflict;
+    $('profile-conflict').hidden = !conflict;
+    if (!conflict || conflict === shownConflict) return;
+    shownConflict = conflict;
+    summary($('sync-remote'), conflict.remote);
+    summary($('sync-local'), conflict.local);
+    const remoteAhead = conflict.remote.totalEarned >= conflict.local.totalEarned;
+    $('sync-remote').closest('.sync-card').classList.toggle('is-ahead', remoteAhead);
+    $('sync-local').closest('.sync-card').classList.toggle('is-ahead', !remoteAhead);
+    openSheet('sheet-sync');
+  }
 
   $('profile-form').addEventListener('submit', (event) => {
     event.preventDefault();
@@ -107,7 +155,7 @@ export function createLeaderboardView(data, lb, { goToBoard }) {
       $('profile-rank').textContent = lb.mine ? `#${lb.mine.rank} au classement` : 'Pas encore classé';
       $('profile-sent').textContent = lb.lastSentAt
         ? `Score envoyé ${ago(new Date(lb.lastSentAt))}. Envoi automatique toutes les minutes.`
-        : 'Ton score part automatiquement toutes les minutes.';
+        : 'Ta partie et ton score partent automatiquement toutes les minutes.';
       $('profile-send').disabled = !online;
       const character = lb.mine?.row.character;
       $('profile-face').replaceWith(Object.assign(face(data, character ?? data.characters[0].id), { id: 'profile-face' }));
@@ -118,6 +166,22 @@ export function createLeaderboardView(data, lb, { goToBoard }) {
       notice.textContent = lb.notice.text;
       notice.classList.toggle('is-error', lb.notice.kind === 'error');
     }
+
+    // Sauvegarde en ligne : ligne d'état (profil et « Ton QG »), choix entre deux parties.
+    const [cloudText, cloudKind] = cloudLine();
+    for (const id of ['profile-cloud', 'settings-cloud']) {
+      $(id).textContent = cloudText;
+      $(id).className = `cloud-line ${cloudKind}`;
+      $(id).hidden = !cloudText;
+    }
+    $('settings-account').textContent = lb.mode === 'off'
+      ? 'Classement et sauvegarde en ligne : hors ligne pour le moment.'
+      : lb.profile
+        ? `Connecté : ${lb.profile.pseudo}${lb.mine ? ` (#${lb.mine.rank})` : ''}`
+        : 'Pas connecté : ta partie reste sur cet appareil.';
+    $('settings-login').hidden = lb.mode === 'off';
+    $('settings-login-label').textContent = lb.profile ? 'Voir le classement' : 'Se connecter (pseudo + code)';
+    renderConflict();
 
     // Pastille de rang dans l'en-tête.
     $('chip-rank').hidden = !lb.mine;

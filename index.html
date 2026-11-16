@@ -167,7 +167,7 @@
       <section id="card-profile" class="card card-profile only-classement">
         <h2 class="card-title">Ton profil</h2>
         <form id="profile-form" class="profile-form" novalidate>
-          <p class="hint">Choisis un pseudo et un code secret de 4 chiffres. Le code sert à te reconnecter sur un autre appareil : pas de courriel, pas de mot de passe.</p>
+          <p class="hint">Choisis un pseudo et un code secret de 4 chiffres. <strong>Ta partie suit ton pseudo</strong> : sur un autre appareil, entre le même pseudo et le même code pour la reprendre. Pas de courriel, pas de mot de passe.</p>
           <label class="field"><span>Pseudo</span><input id="profile-pseudo" name="pseudo" type="text" autocomplete="nickname" maxlength="16" spellcheck="false" required></label>
           <label class="field"><span>Code secret</span><input id="profile-code" name="code" type="password" inputmode="numeric" autocomplete="off" pattern="[0-9]{4}" maxlength="4" required></label>
           <button id="profile-join" class="btn btn-campaign" type="submit"><span>Entrer dans le classement</span><span class="btn-price">🏆</span></button>
@@ -176,8 +176,10 @@
         <div id="profile-card" class="profile-card" hidden>
           <p class="profile-name"><span id="profile-face" class="board-face"></span><strong id="profile-current"></strong></p>
           <p id="profile-rank" class="profile-rank"></p>
+          <p id="profile-cloud" class="cloud-line"></p>
           <p id="profile-sent" class="hint"></p>
-          <button id="profile-send" class="btn btn-weed" type="button"><span>Envoyer mon score</span><span class="btn-price">↑</span></button>
+          <button id="profile-conflict" class="btn btn-promo" type="button" hidden><span>Choisir ma partie</span><span class="btn-price">⚠️</span></button>
+          <button id="profile-send" class="btn btn-weed" type="button"><span>Sauvegarder et envoyer</span><span class="btn-price">☁️</span></button>
           <button id="profile-leave" class="link profile-leave" type="button">Changer de pseudo sur cet appareil</button>
         </div>
         <p id="profile-notice" class="profile-notice" role="status" hidden></p>
@@ -242,6 +244,28 @@
       </div>
     </section>
 
+    <section id="sheet-sync" class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-sync-title" hidden>
+      <header class="sheet-head">
+        <h2 id="sheet-sync-title" class="sheet-title">Deux parties</h2>
+        <button class="sheet-close" type="button" data-close aria-label="Choisir plus tard">✕</button>
+      </header>
+      <div class="sheet-body">
+        <p class="hint sync-intro">Ce pseudo a une partie en ligne, et cet appareil en a une autre. Laquelle on garde ? L'autre sera remplacée.</p>
+        <div class="sync-choices">
+          <article class="sync-card">
+            <h3 class="sync-title">☁️ En ligne</h3>
+            <div id="sync-remote" class="sync-summary"></div>
+            <button id="sync-keep-remote" class="btn btn-campaign" type="button"><span>Reprendre celle-ci</span></button>
+          </article>
+          <article class="sync-card">
+            <h3 class="sync-title">📱 Sur cet appareil</h3>
+            <div id="sync-local" class="sync-summary"></div>
+            <button id="sync-keep-local" class="btn btn-setting" type="button"><span>Garder celle-ci</span></button>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <section id="sheet-settings" class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-settings-title" hidden>
       <header class="sheet-head">
         <h2 id="sheet-settings-title" class="sheet-title">Ton QG</h2>
@@ -254,6 +278,11 @@
             <p id="career-name" class="career-name"></p>
             <p id="next-tier" class="hint"></p>
           </div>
+        </div>
+        <div class="account">
+          <p id="settings-account" class="account-name"></p>
+          <p id="settings-cloud" class="cloud-line"></p>
+          <button id="settings-login" class="btn btn-campaign" type="button"><span id="settings-login-label">Se connecter (pseudo + code)</span><span class="btn-price">☁️</span></button>
         </div>
         <div class="settings">
           <button id="toggle-sound" class="btn btn-setting" type="button"></button>

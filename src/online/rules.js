@@ -71,6 +71,9 @@ export function describeResult(result) {
     case 'invalid_score': return 'Score refusé par le serveur.';
     case 'too_soon': return 'Score envoyé il y a moins de 10 secondes : on réessaie bientôt.';
     case 'network': return 'Impossible de joindre le classement. On réessaie plus tard.';
+    case 'conflict': return 'Une autre partie a été sauvegardée sur ce pseudo depuis un autre appareil.';
+    case 'invalid_save': return 'Sauvegarde refusée par le serveur.';
+    case 'cloud_missing': return "La sauvegarde en ligne n'est pas encore activée sur le serveur (supabase/README.md).";
     default: return 'Réponse inattendue du classement.';
   }
 }
@@ -97,4 +100,20 @@ export function keyProblem(key) {
     }
   }
   return null;
+}
+
+/** Résumé d'une partie pour choisir entre deux sauvegardes. */
+export function summarize(save) {
+  return {
+    character: save?.characterId ?? save?.character_id ?? '',
+    totalEarned: Number(save?.totalEarned ?? save?.total_earned) || 0,
+    tierIndex: Number(save?.tierIndex ?? save?.tier_index) || 0,
+    playedSeconds: Number(save?.time) || 0,
+    updatedAt: save?.updated_at ? new Date(save.updated_at) : save?.lastSeen ? new Date(save.lastSeen) : null,
+  };
+}
+
+/** Une partie à peine commencée : on peut la remplacer par celle en ligne sans demander. */
+export function isFreshGame(state) {
+  return !state || ((Number(state.totalEarned) || 0) < 100 && (Number(state.time) || 0) < 300);
 }

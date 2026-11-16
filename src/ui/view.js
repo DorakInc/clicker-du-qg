@@ -657,7 +657,7 @@ export function createGameView(data, actions, fx) {
   };
 
   return {
-    update, showMessage, setFansTrend, setSaveStatus, setSoundLabel, announceGreenhouse, announceMap, setScene, closeSheet,
+    update, showMessage, setFansTrend, setSaveStatus, setSoundLabel, announceGreenhouse, announceMap, setScene, openSheet, closeSheet,
     beatButton, harvestButton, showButton, anchors,
   };
 }

@@ -11,7 +11,7 @@ import { createGameView, showCharacterSelect } from './ui/view.js';
 import { createAudio } from './audio/audio.js';
 import { createFx } from './ui/fx/fx.js';
 import { createMotion, MOTION_MODES } from './ui/fx/motion.js';
-import { createLeaderboard } from './online/leaderboard.js';
+import { PROFILE_KEY, createLeaderboard } from './online/leaderboard.js';
 import { createLeaderboardView } from './ui/leaderboard-view.js';
 
 const DATA_FILES = ['balance', 'characters', 'producers', 'upgrades', 'tiers', 'texts', 'sounds', 'greenhouse', 'map', 'fx', 'online'];
@@ -170,7 +170,8 @@ function startGame(data, state, { audio, settings, motion, offline }) {
     buyProducer: (id) => handle(buyProducer(state, data, id)),
     buyUpgrade: (id) => handle(buyUpgrade(state, data, id)),
     reset() {
-      if (!confirm('Recommencer une nouvelle partie ? La progression actuelle sera perdue.')) return;
+      const online = storage.get(PROFILE_KEY) ? ' Tu es connecté : la partie en ligne sera aussi remplacée (ton record au classement reste).' : '';
+      if (!confirm(`Recommencer une nouvelle partie ? La progression actuelle sera perdue.${online}`)) return;
       resetting = true;
       storage.remove(SAVE_KEY);
       location.reload();
@@ -197,26 +198,58 @@ function startGame(data, state, { audio, settings, motion, offline }) {
 
   // ---- Classement en ligne (src/online/) ----
   // ?classement=demo : faux serveur en mémoire, pour essayer sans compte Supabase.
+  // Le pseudo + code portent aussi la sauvegarde en ligne : la partie suit le joueur d'un appareil à l'autre.
   const leaderboard = createLeaderboard({
     config: data.online,
     storage,
     demo: new URLSearchParams(location.search).get('classement') === 'demo',
     onMessage: (text, kind = '') => view.showMessage(text, kind),
+    getSaveText: () => {
+      state.lastSeen = Date.now();
+      return serialize(state);
+    },
+    isValidSave: (saved) => deserialize(JSON.stringify(saved), data) !== null,
+    onLoadSave(text) {
+      // Reprendre la partie en ligne : on remplace la sauvegarde locale et on relance le jeu.
+      resetting = true;
+      storage.set(SAVE_KEY, text);
+      location.reload();
+    },
   });
-  createLeaderboardView(data, leaderboard, { goToBoard: () => view.setScene('classement') });
+  createLeaderboardView(data, leaderboard, {
+    goToBoard: () => view.setScene('classement'),
+    openSheet: (id) => view.openSheet(id),
+    closeSheet: () => view.closeSheet(),
+  });
   leaderboard.start(() => state);
   };
   showMotion();
 
   // ---- Classement en ligne (src/online/) ----
   // ?classement=demo : faux serveur en mémoire, pour essayer sans compte Supabase.
+  // Le pseudo + code portent aussi la sauvegarde en ligne : la partie suit le joueur d'un appareil à l'autre.
   const leaderboard = createLeaderboard({
     config: data.online,
     storage,
     demo: new URLSearchParams(location.search).get('classement') === 'demo',
     onMessage: (text, kind = '') => view.showMessage(text, kind),
+    getSaveText: () => {
+      state.lastSeen = Date.now();
+      return serialize(state);
+    },
+    isValidSave: (saved) => deserialize(JSON.stringify(saved), data) !== null,
+    onLoadSave(text) {
+      // Reprendre la partie en ligne : on remplace la sauvegarde locale et on relance le jeu.
+      resetting = true;
+      storage.set(SAVE_KEY, text);
+      location.reload();
+    },
   });
-  createLeaderboardView(data, leaderboard, { goToBoard: () => view.setScene('classement') });
+  createLeaderboardView(data, leaderboard, {
+    goToBoard: () => view.setScene('classement'),
+    openSheet: (id) => view.openSheet(id),
+    closeSheet: () => view.closeSheet(),
+  });
   leaderboard.start(() => state);
 
   function handle(events) {
@@ -323,7 +356,10 @@ function startGame(data, state, { audio, settings, motion, offline }) {
   requestAnimationFrame(frame);
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') save();
+    if (document.visibilityState === 'hidden') {
+      save();
+      leaderboard.flush();
+    }
   });
   window.addEventListener('pagehide', save);
 }
