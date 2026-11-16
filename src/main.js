@@ -3,18 +3,19 @@
 // l'audio (src/audio).
 
 import {
-  SAVE_KEY, applyOffline, buyCannabis, buyEquipment, buyProducer, buyStrain, buyUpgrade, click,
+  SAVE_KEY, applyOffline, buyCannabis, buyEquipment, buyPet, buyProducer, buyStrain, buyUpgrade, click,
   createState, deserialize, formatDuration, formatMoney, formatNumber, giveSamples, harvest, playShow,
-  resolveEvent, rollJoint, runPromo, serialize, startCampaign, tick, triggerEvent,
+  resolveEvent, rollJoint, runPromo, serialize, setCompanion, startCampaign, tick, triggerEvent,
 } from './game/index.js';
 import { createGameView, showCharacterSelect } from './ui/view.js';
 import { createAudio } from './audio/audio.js';
 import { createFx } from './ui/fx/fx.js';
 import { createMotion, MOTION_MODES } from './ui/fx/motion.js';
 import { PROFILE_KEY, createLeaderboard } from './online/leaderboard.js';
+import { liveFromState } from './online/rules.js';
 import { createLeaderboardView } from './ui/leaderboard-view.js';
 
-const DATA_FILES = ['balance', 'characters', 'producers', 'upgrades', 'tiers', 'texts', 'sounds', 'greenhouse', 'map', 'fx', 'online', 'events'];
+const DATA_FILES = ['balance', 'characters', 'producers', 'upgrades', 'tiers', 'texts', 'sounds', 'greenhouse', 'map', 'fx', 'online', 'events', 'pets'];
 const MOTION_LABELS = { auto: 'Animations : auto', reduced: 'Animations : réduites', full: 'Animations : complètes' };
 const SETTINGS_KEY = 'clicker-du-qg/settings';
 const RENDER_INTERVAL = 1 / 15; // l'affichage est rafraîchi 15 fois par seconde
@@ -37,6 +38,9 @@ const MESSAGE_EVENTS = {
   mapUnlock: '',
   campaignStart: '',
   territoryConquered: '',
+  adoptPet: '',
+  treatPet: '',
+  companion: '',
 };
 
 // ---- Stockage (protégé : navigation privée, stockage bloqué...) ----------
@@ -169,6 +173,9 @@ function startGame(data, state, { audio, settings, motion, offline }) {
     buyCannabis: () => handle(buyCannabis(state, data)),
     buyProducer: (id) => handle(buyProducer(state, data, id)),
     buyUpgrade: (id) => handle(buyUpgrade(state, data, id)),
+    buyPet: (id) => handle(buyPet(state, data, id)),
+    setCompanion: (id) => handle(setCompanion(state, data, id)),
+    petPet: () => audio.play('petPet'),
     reset() {
       const online = storage.get(PROFILE_KEY) ? ' Tu es connecté : la partie en ligne sera aussi remplacée (ton record au classement reste).' : '';
       if (!confirm(`Recommencer une nouvelle partie ? La progression actuelle sera perdue.${online}`)) return;
@@ -195,39 +202,13 @@ function startGame(data, state, { audio, settings, motion, offline }) {
     settings.motion = next;
     storage.set(SETTINGS_KEY, JSON.stringify(settings));
     showMotion();
-
-  // ---- Classement en ligne (src/online/) ----
-  // ?classement=demo : faux serveur en mémoire, pour essayer sans compte Supabase.
-  // Le pseudo + code portent aussi la sauvegarde en ligne : la partie suit le joueur d'un appareil à l'autre.
-  const leaderboard = createLeaderboard({
-    config: data.online,
-    storage,
-    demo: new URLSearchParams(location.search).get('classement') === 'demo',
-    onMessage: (text, kind = '') => view.showMessage(text, kind),
-    getSaveText: () => {
-      state.lastSeen = Date.now();
-      return serialize(state);
-    },
-    isValidSave: (saved) => deserialize(JSON.stringify(saved), data) !== null,
-    onLoadSave(text) {
-      // Reprendre la partie en ligne : on remplace la sauvegarde locale et on relance le jeu.
-      resetting = true;
-      storage.set(SAVE_KEY, text);
-      location.reload();
-    },
-  });
-  createLeaderboardView(data, leaderboard, {
-    goToBoard: () => view.setScene('classement'),
-    openSheet: (id) => view.openSheet(id),
-    closeSheet: () => view.closeSheet(),
-  });
-  leaderboard.start(() => state);
   };
   showMotion();
 
   // ---- Classement en ligne (src/online/) ----
   // ?classement=demo : faux serveur en mémoire, pour essayer sans compte Supabase.
   // Le pseudo + code portent aussi la sauvegarde en ligne : la partie suit le joueur d'un appareil à l'autre.
+  // Avec la sauvegarde partent les stats publiques de la partie (onglet « Temps réel », page de carrière).
   const leaderboard = createLeaderboard({
     config: data.online,
     storage,
@@ -237,6 +218,7 @@ function startGame(data, state, { audio, settings, motion, offline }) {
       state.lastSeen = Date.now();
       return serialize(state);
     },
+    getLiveStats: () => liveFromState(state, data),
     isValidSave: (saved) => deserialize(JSON.stringify(saved), data) !== null,
     onLoadSave(text) {
       // Reprendre la partie en ligne : on remplace la sauvegarde locale et on relance le jeu.
@@ -277,7 +259,7 @@ function startGame(data, state, { audio, settings, motion, offline }) {
       if (event.type === 'mapUnlock') view.announceMap();
       if (event.type in MESSAGE_EVENTS) {
         const key = event.type === 'campaignStart' && event.rival ? 'campaignRival' : event.type;
-        const text = message(data, key, { tier: event.name, name: event.name, rival: event.rival });
+        const text = message(data, key, { tier: event.name, name: event.name, rival: event.rival, level: event.level });
         if (text) view.showMessage(text, MESSAGE_EVENTS[event.type]);
       }
     }

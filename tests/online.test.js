@@ -3,9 +3,13 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { codeError, describeResult, isConfigured, isFreshGame, keyProblem, pseudoError, rankIn, scoreFromState, summarize } from '../src/online/rules.js';
-import { createMemoryBackend } from '../src/online/backend.js';
-import { createState } from '../src/game/index.js';
+import {
+  cleanLiveStats, codeError, compareLive, describeResult, isConfigured, isFreshGame, isMissingOnServer, isPlayingNow, keyProblem,
+  liveFromState, pseudoError, rankIn, scoreFromState, summarize, toLiveRow,
+} from '../src/online/rules.js';
+import { createMemoryBackend, createSupabaseBackend } from '../src/online/backend.js';
+import { createLeaderboard } from '../src/online/leaderboard.js';
+import { createState, incomePerSecond } from '../src/game/index.js';
 import { loadData } from './helpers.js';
 
 const data = loadData();
@@ -108,4 +112,172 @@ test('choisir entre deux parties', () => {
   const s = summarize({ characterId: 'emile', totalEarned: 800, tierIndex: 1, time: 600 });
   assert.deepEqual([s.character, s.totalEarned, s.tierIndex, s.playedSeconds], ['emile', 800, 1, 600]);
   assert.equal(summarize({ character_id: 'nathan', total_earned: 50, tier_index: 2 }).character, 'nathan', 'résumé du serveur');
+});
+
+// ---- Temps réel : stats publiques de la partie en cours ----------------------
+
+// Colonnes publiques de live_stats (supabase/migrations/20261116120000_temps_reel.sql).
+const PUBLIC_LIVE_FIELDS = [
+  'pseudo', 'character_id', 'money', 'income', 'total_earned', 'tier_index', 'fans', 'bps', 'total_beats', 'territories',
+  'greenhouse', 'total_grams', 'pets', 'companion', 'fail_out', 'played_seconds', 'updated_at',
+].sort();
+
+function advancedState() {
+  const state = createState(data, 'nathan');
+  Object.assign(state, {
+    money: 1234, totalEarned: 98765, fans: 4321, totalBeats: 5000, totalGrams: 77, greenhouseUnlocked: true, time: 3600, failOut: true,
+  });
+  state.producers = { [data.producers[0].id]: 3 };
+  state.conquered.montreal = true;
+  state.pets = { minou: 2, pitou: 0 };
+  state.companion = 'minou';
+  return state;
+}
+
+test('stats publiques calculées depuis la partie (comme la barre du haut)', () => {
+  const state = advancedState();
+  const stats = liveFromState(state, data);
+  assert.equal(stats.income, incomePerSecond(state, data), '$/s identique au HUD');
+  assert.ok(stats.bps > 0, 'beats/s des producteurs');
+  assert.deepEqual(stats.pets, { minou: 2 }, 'seulement les animaux adoptés');
+  assert.equal(stats.companion, 'minou');
+  assert.deepEqual([stats.money, stats.fans, stats.territories, stats.greenhouse, stats.fail_out], [1234, 4321, 2, true, true]);
+  assert.ok(cleanLiveStats(stats), 'acceptées par les règles du serveur');
+  assert.ok(JSON.stringify(stats).length < 1000, 'petites : pas la sauvegarde complète');
+  for (const secret of ['producers', 'upgrades', 'events', 'code', 'save', 'high', 'tolerance']) {
+    assert.ok(!(secret in stats), `rien de la sauvegarde : ${secret}`);
+  }
+
+  state.money = Number.NaN;
+  state.companion = 'pitou'; // pas adopté (niveau 0)
+  const odd = liveFromState(state, data);
+  assert.equal(odd.money, 0, 'jamais de NaN envoyé');
+  assert.equal(odd.companion, '', 'compagnon non adopté : aucun');
+});
+
+test('stats publiques : mêmes règles que le SQL (_live_stats_ok)', () => {
+  // Mêmes cas que ceux vérifiés sur PostgreSQL (voir supabase/README.md, « Vérifier »).
+  const cases = [
+    [{}, true], [{ money: '5' }, false], [{ money: null }, false], [{ money: 1e301 }, false], [{ money: -1 }, false],
+    [{ money: Number.NaN }, false], [{ money: Infinity }, false], [{ territories: 1.5 }, false], [{ territories: 1000 }, false],
+    [{ greenhouse: 1 }, false], [{ companion: 'Minou' }, false], [{ companion: '' }, true], [{ pets: [] }, false],
+    [{ pets: { minou: 1.5 } }, false], [{ pets: { MINOU: 1 } }, false], [{ pets: { minou: 10000 } }, false],
+    [{ pets: { minou: null } }, false], [[], false], [5, false], [null, false],
+    [{ pets: Object.fromEntries(Array.from({ length: 33 }, (_, i) => [`animal-${i}`, 1])) }, false],
+  ];
+  for (const [stats, ok] of cases) assert.equal(Boolean(cleanLiveStats(stats)), ok, JSON.stringify(stats));
+  const clean = cleanLiveStats({ money: 5, inconnu: 'ignoré' });
+  assert.equal(clean.money, 5);
+  assert.equal(clean.income, 0, 'champ absent : valeur par défaut');
+  assert.ok(!('inconnu' in clean), 'clé inconnue ignorée');
+});
+
+test('temps réel (faux serveur) : publié seulement avec une sauvegarde acceptée', async () => {
+  const server = createMemoryBackend({ rivals: [['Rival', 'emile', 500, 1]], latencyMs: 0, live: false });
+  await server.join('Testeur', '1234');
+  const me = { pseudo: 'Testeur', code: '1234' };
+  const game = (revision, stats) => ({ save: { version: 1 }, revision, totalEarned: 800, tierIndex: 2, character: 'xavier', stats });
+
+  assert.deepEqual(await server.saveGame(me, game(0, { money: 10, income: 1e6 })), { status: 'ok', revision: 1, stats: 'ok' });
+  let top = await server.liveTop(10);
+  assert.equal(top[0].pseudo, 'Testeur', 'trié par $/s');
+  assert.deepEqual([top[0].money, top[0].totalEarned, top[0].tierIndex, top[0].character], [10, 800, 2, 'xavier']);
+
+  assert.deepEqual(await server.saveGame(me, game(1, { money: -5 })), { status: 'ok', revision: 2, stats: 'invalid' }, 'stats invalides : sauvegarde quand même');
+  assert.equal((await server.liveTop(10))[0].money, 10, 'stats invalides ignorées');
+  assert.equal((await server.saveGame(me, game(1, { money: 999 }))).status, 'conflict');
+  assert.equal((await server.saveGame({ ...me, code: '0000' }, game(2, { money: 999 }))).status, 'wrong_code');
+  assert.equal((await server.liveTop(10))[0].money, 10, 'appareil en retard ou mauvais code : rien publié');
+
+  // Ce que tout le monde peut lire : ni code, ni sauvegarde.
+  const raw = JSON.parse(JSON.stringify(await server.liveTop(10)));
+  for (const row of raw) {
+    assert.ok(!('code' in row) && !('save' in row) && !('data' in row) && !('revision' in row), 'rien de privé dans « Temps réel »');
+  }
+
+  const career = await server.career('testeur');
+  assert.equal(career.live.pseudo, 'Testeur');
+  assert.equal(career.liveRank, 1);
+  assert.equal(career.record, null, 'pas encore de score au classement');
+  const rival = await server.career('Rival');
+  assert.equal(rival.recordRank, 1);
+  assert.equal(rival.live, null, 'rival sans partie en ligne');
+});
+
+test('temps réel : ordre, joueur « en jeu », lignes du serveur', () => {
+  const at = (iso) => ({ updated_at: iso });
+  const rows = [
+    toLiveRow({ pseudo: 'B', income: 5, ...at('2026-01-02T00:00:00Z') }),
+    toLiveRow({ pseudo: 'A', income: 5, ...at('2026-01-01T00:00:00Z') }),
+    toLiveRow({ pseudo: 'C', income: 50, pets: { minou: 2, pitou: 0 }, ...at('2026-01-03T00:00:00Z') }),
+  ].sort(compareLive);
+  assert.deepEqual(rows.map((r) => r.pseudo), ['C', 'A', 'B'], '$/s, puis le plus ancien à égalité (comme le SQL)');
+  assert.deepEqual(rows[0].pets, { minou: 2 });
+  const now = Date.now();
+  assert.ok(isPlayingNow(new Date(now - 60000), now));
+  assert.ok(!isPlayingNow(new Date(now - 10 * 60000), now));
+  assert.ok(!isPlayingNow(null, now));
+});
+
+test('serveur sans la migration « temps réel » : la sauvegarde passe quand même', async () => {
+  const calls = [];
+  let stats = false; // le serveur connaît-il p_stats ?
+  const fakeClient = {
+    async rpc(name, args) {
+      calls.push(Object.keys(args));
+      if ('p_stats' in args && !stats) return { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.save_game' } };
+      return { data: { status: 'ok', revision: 1 }, error: null };
+    },
+  };
+  const backend = createSupabaseBackend({ supabaseUrl: 'https://x.supabase.co', supabaseKey: 'k' }, { createClient: () => fakeClient });
+  const game = { save: { version: 1 }, revision: 0, totalEarned: 1, tierIndex: 0, character: 'xavier', stats: { money: 1 } };
+  assert.equal((await backend.saveGame({ pseudo: 'A', code: '1234' }, game)).status, 'ok');
+  assert.deepEqual(calls.map((keys) => keys.includes('p_stats')), [true, false], 'essai avec stats, puis sans');
+  await backend.saveGame({ pseudo: 'A', code: '1234' }, game);
+  assert.equal(calls.at(-1).includes('p_stats'), false, 'ensuite, plus de stats envoyées');
+
+  // Autre erreur : elle remonte (pas de nouvel essai silencieux).
+  stats = true;
+  const failing = createSupabaseBackend({ supabaseUrl: 'https://x.supabase.co', supabaseKey: 'k' }, {
+    createClient: () => ({ rpc: async () => ({ data: null, error: { code: '500', message: 'boom' } }) }),
+  });
+  await assert.rejects(failing.saveGame({ pseudo: 'A', code: '1234' }, game));
+  assert.ok(isMissingOnServer({ code: 'PGRST205' }) && isMissingOnServer({ code: '42P01' }) && !isMissingOnServer({ code: '500' }));
+});
+
+function memoryStorage() {
+  const map = new Map();
+  return { get: (k) => map.get(k) ?? null, set: (k, v) => { map.set(k, v); return true; }, remove: (k) => map.delete(k) };
+}
+
+test('le jeu envoie ses stats avec la sauvegarde et lit « Temps réel »', async () => {
+  const config = { topSize: 10, submitEverySeconds: 60, pollSeconds: 30 };
+  const backend = createMemoryBackend({ rivals: [['Rival', 'emile', 500, 1]], latencyMs: 0, live: false });
+  const state = advancedState();
+  const lb = createLeaderboard({
+    config, storage: memoryStorage(), backend,
+    getSaveText: () => JSON.stringify(state),
+    getLiveStats: () => liveFromState(state, data),
+  });
+  lb.start(() => state);
+  await lb.join('Testeur', '1234');
+  await lb.refresh();
+  assert.equal(lb.liveStatus, 'ok');
+  const mine = lb.liveRows.find((row) => row.pseudo === 'Testeur');
+  assert.ok(mine, 'ma partie apparaît dans « Temps réel »');
+  assert.equal(mine.income, incomePerSecond(state, data));
+  assert.equal(lb.liveMine.row.pseudo, 'Testeur');
+  const career = await lb.loadCareer('Testeur');
+  assert.equal(career.live.money, 1234);
+  assert.equal(career.record.totalEarned, 98765, 'le record envoyé au join');
+  lb.stop();
+
+  // Serveur sans « Temps réel » : l'onglet le dit, le reste marche.
+  const old = createMemoryBackend({ rivals: [['Rival', 'emile', 500, 1]], latencyMs: 0, live: false });
+  const withoutLive = createLeaderboard({
+    config, storage: memoryStorage(), backend: { ...old, liveTop: async () => { throw { code: 'PGRST205' }; } },
+  });
+  await withoutLive.refresh();
+  assert.equal(withoutLive.liveStatus, 'missing');
+  assert.equal(withoutLive.rows.length, 1, 'le classement record reste là');
 });

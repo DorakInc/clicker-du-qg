@@ -15,10 +15,10 @@ export function producerCost(def, owned) {
   return Math.ceil(def.baseCost * def.costGrowth ** owned);
 }
 
-/** Multiplicateur de qualité des beats : 1 à jeun, plus haut avec le cannabis. */
+/** Multiplicateur de qualité des beats : 1 à jeun, plus haut avec le cannabis et l'inspiration (animaux). */
 export function quality(state, data, mods = getModifiers(state, data)) {
   const c = data.balance.cannabis;
-  return 1 + c.qualityPower * mods.cannabisPower * (state.high / c.maxHigh);
+  return (1 + c.qualityPower * mods.cannabisPower * (state.high / c.maxHigh)) * mods.quality;
 }
 
 /** Trop de cannabis ralentit la production (1 = normal). */

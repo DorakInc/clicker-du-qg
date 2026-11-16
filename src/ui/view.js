@@ -5,11 +5,12 @@
 //   assets/images/personnages/<id>-sheet.png  feuille de sprites (npm run sprites)
 //   assets/images/qg/fond.png                 le décor du QG (npm run sprites)
 //   assets/images/qg/<idUpgrade>.png          objet du QG une fois acheté
+//   assets/images/animaux/<idAnimal>.png      animal de compagnie : 2 images de 28 × 20 (npm run sprites)
 
 import {
   beatValue, beatsPerSecond, cannabisPrice, equipmentCost, formatMoney, formatNumber, getModifiers,
   gramsPerSecond, incomePerSecond, isAvailable, isConquered, isOverdosed, isUnlocked, jointCost,
-  netHypePerSecond, producerCost, promoCost, quality, samplesCost, strainCost,
+  netHypePerSecond, petCost, petLevel, producerCost, promoCost, quality, samplesCost, strainCost,
 } from '../game/index.js';
 
 const formatGrams = (grams) => `${formatNumber(grams)} g`;
@@ -50,6 +51,16 @@ function spriteOr(id, name, fallback, scale) {
   probe.src = src;
   sprite.style.backgroundImage = `url("${src}")`;
   return sprite;
+}
+
+/** Animal de compagnie animé (2 images de 28 × 20, la queue bouge). */
+function petImage(id, name) {
+  const pet = document.createElement('span');
+  pet.className = 'pet-sprite';
+  pet.setAttribute('role', 'img');
+  pet.setAttribute('aria-label', name);
+  pet.style.backgroundImage = `url("assets/images/animaux/${id}.png")`;
+  return pet;
 }
 
 function el(tag, className, text) {
@@ -120,13 +131,27 @@ export function createGameView(data, actions, fx) {
   const upgradeRows = data.upgrades.map((def) => shopRow(def, buyRow(actions.buyUpgrade), 'installé'));
   const equipmentRows = data.greenhouse.equipment.map((def) => shopRow(def, buyRow(actions.buyEquipment)));
   const strainRows = data.greenhouse.strains.map((def) => shopRow(def, buyRow(actions.buyStrain)));
+  const petRows = (data.pets ?? []).map((def) => {
+    const row = shopRow(def, buyRow(actions.buyPet));
+    row.button.prepend(petImage(def.id, def.name));
+    // Bouton « à côté de moi » : choisir quel animal se tient près du personnage.
+    row.follow = el('button', 'pet-follow', 'à côté de moi');
+    row.follow.type = 'button';
+    row.follow.hidden = true;
+    row.follow.onclick = () => actions.setCompanion(def.id);
+    row.li.append(row.follow);
+    row.effect.textContent = `par niveau : ${def.effects.map((e) => describeEffect(e, data.texts)).join(', ')}`;
+    return row;
+  });
   const rowsByEvent = {
     buyProducer: producerRows, buyUpgrade: upgradeRows, buyEquipment: equipmentRows, buyStrain: strainRows,
+    adoptPet: petRows, treatPet: petRows,
   };
   $('shop-producers').replaceChildren(...producerRows.map((r) => r.li));
   $('shop-upgrades').replaceChildren(...upgradeRows.map((r) => r.li));
   $('shop-equipment').replaceChildren(...equipmentRows.map((r) => r.li));
   $('shop-strains').replaceChildren(...strainRows.map((r) => r.li));
+  $('shop-pets').replaceChildren(...petRows.map((r) => r.li));
   for (const row of upgradeRows) {
     row.effect.textContent = row.def.effects.map((e) => describeEffect(e, data.texts)).join(', ');
   }
@@ -275,6 +300,24 @@ export function createGameView(data, actions, fx) {
   $('territory-promo').onclick = () => tryBuy($('territory-promo'), actions.runPromo);
   $('territory-samples').onclick = () => tryBuy($('territory-samples'), actions.giveSamples);
   $('reset').onclick = () => actions.reset();
+
+  // Flatter l'animal : des cœurs qui montent (purement pour le plaisir).
+  $('qg-pet').onclick = (event) => {
+    actions.petPet();
+    if (fx.motion.reduced) return;
+    const pet = $('qg-pet');
+    const rect = pet.getBoundingClientRect();
+    const box = scene.getBoundingClientRect();
+    const heart = el('span', 'pet-heart', '❤');
+    const keyboard = !event.clientX && !event.clientY;
+    heart.style.left = `${(keyboard ? rect.left + rect.width / 2 : event.clientX) - box.left + (Math.random() - 0.5) * 16}px`;
+    heart.style.top = `${(keyboard ? rect.top : event.clientY) - box.top - 12}px`;
+    scene.append(heart);
+    heart.addEventListener('animationend', () => heart.remove(), { once: true });
+    pet.classList.remove('is-petted');
+    void pet.offsetWidth; // relance l'animation de saut
+    pet.classList.add('is-petted');
+  };
   $('toggle-sound').onclick = () => actions.toggleSound();
 
   const { maxHigh, overdose } = data.balance.cannabis;
@@ -407,12 +450,22 @@ export function createGameView(data, actions, fx) {
       row.owned.textContent = bought ? '✓' : '';
       updateCost(row, { cost: row.def.cost, wallet: state.money, unlocked: isUnlocked(row.def, state), done: bought });
     }
+    for (const row of petRows) {
+      const level = petLevel(state, row.def.id);
+      const unlocked = isUnlocked(row.def, state);
+      row.owned.textContent = level > 0 ? `amitié niv. ${level}` : '';
+      updateCost(row, { cost: petCost(row.def, level), wallet: state.money, unlocked });
+      if (unlocked) row.cost.textContent = `${level > 0 ? 'gâterie' : 'adopter'} · ${row.cost.textContent}`;
+      row.follow.hidden = level === 0;
+      row.follow.disabled = state.companion === row.def.id;
+      row.follow.textContent = state.companion === row.def.id ? '✓ à côté de toi' : 'à côté de moi';
+    }
 
     renderEffects(state);
 
     // Badge de la boutique : combien d'articles on peut acheter maintenant.
     const place = game.dataset.scene;
-    const shopRows = place === 'serre' ? [...equipmentRows, ...strainRows] : [...producerRows, ...upgradeRows];
+    const shopRows = place === 'serre' ? [...equipmentRows, ...strainRows] : [...producerRows, ...upgradeRows, ...petRows];
     const affordable = place === 'carte' ? 0 : shopRows.filter((row) => !row.button.disabled && row.button.getAttribute('aria-disabled') !== 'true').length;
     if (affordable !== shopBadge) {
       shopBadge = affordable;
@@ -420,7 +473,7 @@ export function createGameView(data, actions, fx) {
     }
 
     // Le QG n'est reconstruit que quand les upgrades achetés changent.
-    const key = `${state.characterId}|${Object.keys(state.upgrades).join(',')}`;
+    const key = `${state.characterId}|${Object.keys(state.upgrades).join(',')}|${state.companion}`;
     if (key !== qgKey) {
       qgKey = key;
       renderQg(state);
@@ -591,6 +644,16 @@ export function createGameView(data, actions, fx) {
         return item;
       });
     $('qg-items').replaceChildren(...items);
+
+    // L'animal de compagnie, assis à côté du personnage et tourné vers lui.
+    const pet = (data.pets ?? []).find((p) => p.id === state.companion && petLevel(state, p.id) > 0);
+    const petSlot = $('qg-pet');
+    petSlot.hidden = !pet;
+    if (pet) {
+      petSlot.setAttribute('aria-label', `Flatter ${pet.name}`);
+      petSlot.title = pet.name;
+      petSlot.replaceChildren(petImage(pet.id, pet.name));
+    }
   }
 
   function startTicker(lines) {

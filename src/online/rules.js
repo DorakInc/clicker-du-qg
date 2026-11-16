@@ -1,5 +1,7 @@
 // Règles du classement en ligne, sans navigateur ni réseau (testées par `npm test`).
-// Les mêmes règles sont vérifiées côté serveur : supabase/migrations/*_classement.sql.
+// Les mêmes règles sont vérifiées côté serveur : supabase/migrations/*.sql.
+
+import { beatsPerSecond, getModifiers, incomePerSecond } from '../game/index.js';
 
 /** Lettres (accents compris), chiffres, espace, point, tiret, soulignement ; 2 à 16 caractères. */
 export const PSEUDO_PATTERN = /^[A-Za-z0-9À-ÖØ-öø-ÿ _.-]{2,16}$/;
@@ -50,6 +52,132 @@ export function toRow(raw) {
     territories: Number(raw.territories) || 0,
     updatedAt: raw.updated_at ? new Date(raw.updated_at) : null,
   };
+}
+
+// ---- Partie en cours (onglet « Temps réel » et page « Carrière de l'artiste ») ----
+// Stats publiques envoyées avec la sauvegarde en ligne (save_game, p_stats). Jamais la
+// sauvegarde elle-même ni le code : seulement ces chiffres, lisibles par tout le monde.
+// Personnage, argent total gagné et palier viennent déjà des autres paramètres de save_game.
+// Règles identiques au SQL : supabase/migrations/20261116120000_temps_reel.sql (_live_stats_ok).
+
+export const LIVE_NUMBERS = ['money', 'income', 'fans', 'bps', 'total_beats', 'total_grams', 'played_seconds'];
+export const LIVE_BOOLEANS = ['greenhouse', 'fail_out'];
+const ID_PATTERN = /^[a-z0-9-]{1,32}$/;
+const MAX_NUMBER = 1e300;
+const MAX_PETS = 32;
+const MAX_STATS_BYTES = 4096;
+
+/** Les stats publiques de la partie en cours, calculées comme dans la barre du haut. */
+export function liveFromState(state, data) {
+  const finite = (n) => (Number.isFinite(n) && n > 0 ? Math.min(n, MAX_NUMBER) : 0);
+  const mods = getModifiers(state, data);
+  const pets = {};
+  for (const [id, level] of Object.entries(state.pets ?? {})) {
+    const n = Math.min(9999, Math.floor(Number(level) || 0));
+    if (n > 0 && ID_PATTERN.test(id)) pets[id] = n;
+  }
+  return {
+    money: finite(state.money),
+    income: finite(incomePerSecond(state, data, mods)),
+    fans: finite(state.fans),
+    bps: finite(beatsPerSecond(state, data, mods)),
+    total_beats: finite(state.totalBeats),
+    territories: Math.min(999, Object.values(state.conquered ?? {}).filter(Boolean).length),
+    greenhouse: Boolean(state.greenhouseUnlocked),
+    total_grams: finite(state.totalGrams),
+    pets,
+    companion: pets[state.companion] ? state.companion : '',
+    fail_out: Boolean(state.failOut),
+    played_seconds: finite(state.time),
+  };
+}
+
+function numberOk(value, max, whole = false) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= max && (!whole || Number.isInteger(value));
+}
+
+/**
+ * Vérifie les stats publiques comme le serveur. Champ absent = valeur par défaut ; champ
+ * présent mais invalide (texte, négatif, null...) = tout est refusé. Clés inconnues ignorées.
+ * Retourne la ligne à enregistrer (noms de colonnes SQL) ou null.
+ */
+export function cleanLiveStats(stats) {
+  if (!stats || typeof stats !== 'object' || Array.isArray(stats)) return null;
+  if (JSON.stringify(stats).length > MAX_STATS_BYTES) return null;
+  const has = (key) => Object.prototype.hasOwnProperty.call(stats, key) && stats[key] !== undefined;
+  const row = {};
+  for (const key of LIVE_NUMBERS) {
+    if (has(key) && !numberOk(stats[key], MAX_NUMBER)) return null;
+    row[key] = has(key) ? stats[key] : 0;
+  }
+  if (has('territories') && !numberOk(stats.territories, 999, true)) return null;
+  row.territories = has('territories') ? stats.territories : 0;
+  for (const key of LIVE_BOOLEANS) {
+    if (has(key) && typeof stats[key] !== 'boolean') return null;
+    row[key] = has(key) ? stats[key] : false;
+  }
+  if (has('companion') && (typeof stats.companion !== 'string' || !/^[a-z0-9-]{0,32}$/.test(stats.companion))) return null;
+  row.companion = has('companion') ? stats.companion : '';
+  row.pets = {};
+  if (has('pets')) {
+    const pets = stats.pets;
+    if (!pets || typeof pets !== 'object' || Array.isArray(pets)) return null;
+    const entries = Object.entries(pets);
+    if (entries.length > MAX_PETS) return null;
+    for (const [id, level] of entries) {
+      if (!ID_PATTERN.test(id) || !numberOk(level, 9999, true)) return null;
+      row.pets[id] = level;
+    }
+  }
+  return row;
+}
+
+/** Une ligne de « Temps réel » telle que renvoyée par le serveur → format du jeu. */
+export function toLiveRow(raw) {
+  const pets = raw.pets && typeof raw.pets === 'object' ? raw.pets : {};
+  return {
+    pseudo: raw.pseudo,
+    character: raw.character_id,
+    money: Number(raw.money) || 0,
+    income: Number(raw.income) || 0,
+    totalEarned: Number(raw.total_earned) || 0,
+    tierIndex: Number(raw.tier_index) || 0,
+    fans: Number(raw.fans) || 0,
+    bps: Number(raw.bps) || 0,
+    totalBeats: Number(raw.total_beats) || 0,
+    territories: Number(raw.territories) || 0,
+    greenhouse: Boolean(raw.greenhouse),
+    totalGrams: Number(raw.total_grams) || 0,
+    pets: Object.fromEntries(Object.entries(pets).map(([id, level]) => [id, Number(level) || 0]).filter(([, level]) => level > 0)),
+    companion: raw.companion ?? '',
+    failOut: Boolean(raw.fail_out),
+    playedSeconds: Number(raw.played_seconds) || 0,
+    updatedAt: raw.updated_at ? new Date(raw.updated_at) : null,
+  };
+}
+
+/** Classement « Temps réel » : revenu par seconde, puis le plus ancien à égalité (comme le SQL). */
+export function compareLive(a, b) {
+  return b.income - a.income || (a.updatedAt?.getTime() ?? 0) - (b.updatedAt?.getTime() ?? 0);
+}
+
+/** Rang (1 = premier) d'un revenu parmi les parties en cours. */
+export function liveRankIn(rows, income) {
+  return 1 + rows.filter((row) => row.income > income).length;
+}
+
+/** Une partie sauvegardée il y a moins de 2 min 30 : le joueur est probablement en train de jouer. */
+export function isPlayingNow(updatedAt, now = Date.now()) {
+  return Boolean(updatedAt) && now - updatedAt.getTime() < 150000;
+}
+
+/**
+ * Le serveur n'a pas (encore) cette fonction ou cette table : la migration n'a pas été lancée.
+ * PostgREST : PGRST202 (fonction), PGRST205 (table) ; PostgreSQL : 42P01 (table).
+ */
+export function isMissingOnServer(error) {
+  return ['PGRST202', 'PGRST205', '42P01'].includes(error?.code)
+    || /could not find the (function|table)|does not exist/i.test(error?.message ?? '');
 }
 
 function clock(iso) {

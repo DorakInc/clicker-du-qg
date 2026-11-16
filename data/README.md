@@ -18,7 +18,8 @@ Tout le contenu du jeu vit ici, séparé du code. Les volets B (visuel) et C (so
 | `texts.json` | Messages du jeu, réactions des fans, libellés des statistiques | Volet C |
 | `sounds.json` | Quel fichier audio joue pour quel événement | Volet C |
 | `fx.json` | Réglages des animations : plafonds de particules et de nombres flottants, seuils du « gros beat », durées de tenue (voir `docs/animations/`) | A et B |
-| `online.json` | Classement en ligne : adresse du projet Supabase et **clé publique** (jamais la clé secrète), taille du top, fréquence d'envoi. Vide = classement hors ligne. Voir `supabase/README.md` | A |
+| `online.json` | Classement en ligne : adresse du projet Supabase et **clé publique** (jamais la clé secrète), `topSize` (joueurs affichés dans chacun des deux onglets, Record et Temps réel), `submitEverySeconds` (envoi du score et de la sauvegarde ; les stats « Temps réel » partent avec la sauvegarde), `pollSeconds` (relecture si le direct ne marche pas). Vide = classement hors ligne. Voir `supabase/README.md` | A |
+| `pets.json` | Animaux de compagnie : prix d'adoption, palier, effets par niveau d'amitié | A (chiffres), B (images), C (noms, descriptions) |
 | `events.json` | Événements à la BitLife (police, impôts, beat viral…) : fréquence, conditions, effets, choix et leurs chances. Les textes sont à réécrire par le volet C. Essai direct : `?evenement=<id>` | A (règles), C (textes) |
 
 ## Identifiants (`id`)
@@ -43,8 +44,11 @@ Personnages, upgrades et paliers ont une liste `effects`. Chaque effet multiplie
 | `cannabisDecay` | vitesse à laquelle l'effet du cannabis s'estompe (moins de 1 = dure plus longtemps) |
 | `cannabisPrice` | prix du cannabis |
 | `cannabisPower` | gain de qualité apporté par le cannabis |
+| `quality` | inspiration : multiplie la qualité des beats (même à jeun ; la qualité fait aussi gagner plus de fans) |
 
 Les **variétés** de la serre ont des niveaux sans fin : le niveau N coûte `cost × costGrowth^N` grammes, et chaque niveau applique encore une fois ses `effects` (deux stats en plus : `grow` pour la pousse et `harvest` pour la récolte au clic).
+
+Les **animaux** (`pets.json`) marchent comme les variétés, mais en argent : le niveau 0 → 1 est l'adoption (`cost`), puis chaque gâterie coûte `cost × costGrowth^niveau` et applique encore une fois les `effects`. Tous les animaux adoptés donnent leur bonus ; celui choisi « à côté de moi » s'affiche au QG, et on peut le flatter (des cœurs, sans effet sur le jeu). `species` sert pour le dessin.
 
 Les **territoires** de la carte (`map.json`) : `x` et `y` placent le marqueur sur la carte de 160 × 100 ; `requires` liste les voisins (un seul suffit, ou tous si `requiresAll` vaut `true`) ; `hype` est la barre à remplir ; `defense` est la hype que le rival enlève chaque seconde ; `effects` est le bonus permanent une fois conquis (stat en plus : `hype` pour la vitesse de conquête).
 
@@ -62,6 +66,7 @@ Le jeu cherche les images à ces emplacements, par `id`. Tant qu'un fichier n'ex
 | Plant de la serre | `assets/images/serre/plante.png` (3 stades de 16 × 24, généré) |
 | Carte du monde | `assets/images/carte/fond.png` (160 × 100, généré) |
 | Objet du QG (upgrade acheté) | `assets/images/qg/<id>.png` (ex. `casque.png`) |
+| Animal de compagnie | `assets/images/animaux/<id>.png` (2 images de 28 × 20 côte à côte, de profil vers la droite ; généré par `npm run sprites`, provisoire) |
 
 ### Personnages en pixel art
 
@@ -82,7 +87,7 @@ Les animations suivantes (faire un beat, réaction, effet du cannabis, échec) e
 "click": ["effets/clic-1.mp3", "effets/clic-2.mp3", "effets/clic-3.mp3"]
 ```
 
-Événements : `click`, `buyProducer`, `buyUpgrade`, `cannabisBuy`, `cannabisEmpty` (l'effet est fini), `overdose` (trop gelé), `broke` (à sec), `failStart`, `failEnd`, `tierUp`, `characterSelect`.
+Événements : `click`, `buyProducer`, `adoptPet`, `treatPet`, `petPet` (flatter l'animal), `buyUpgrade`, `cannabisBuy`, `cannabisEmpty` (l'effet est fini), `overdose` (trop gelé), `broke` (à sec), `failStart`, `failEnd`, `tierUp`, `characterSelect`.
 
 Musique (`music`) : une boucle par ambiance, qui change selon l'état du jeu : `normal`, `cannabis` (effet actif), `baisse` (fans en baisse), `echec` (fail out). Mettre `null` tant qu'il n'y a pas de fichier.
 

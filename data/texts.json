@@ -43,6 +43,17 @@
     "buyStrain": [
       "Nouvelle variété : {name}."
     ],
+    "adoptPet": [
+      "{name} s'installe au QG. L'inspiration aussi.",
+      "Bienvenue à {name} ! Le studio sent un peu le poil, mais les beats sont meilleurs."
+    ],
+    "treatPet": [
+      "{name} adore sa gâterie. Amitié niveau {level}.",
+      "{name} te regarde comme si t'étais une star. Amitié niveau {level}."
+    ],
+    "companion": [
+      "{name} vient se coller sur toi."
+    ],
     "offlineGrams": [
       "Pendant ce temps, la serre a fait pousser {grams}."
     ],
@@ -83,7 +94,8 @@
     "cannabisPower": "effet du cannabis",
     "grow": "pousse de la serre",
     "harvest": "récolte par clic",
-    "hype": "vitesse de conquête"
+    "hype": "vitesse de conquête",
+    "quality": "inspiration"
   },
   "ticker": [
     "QG FM, la radio des beats faits au sous-sol",

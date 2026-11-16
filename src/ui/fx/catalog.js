@@ -21,6 +21,8 @@ export const EVENT_FX = {
   buyUpgrade: 'shop_buy',
   buyEquipment: 'shop_buy',
   buyStrain: 'shop_buy',
+  adoptPet: 'shop_buy',
+  treatPet: 'shop_buy',
   tierUp: 'tier_up',
   territoryConquered: 'territory_conquered',
 };

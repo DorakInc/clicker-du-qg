@@ -75,6 +75,7 @@
       <div id="qg" class="scene only-studio">
         <div id="qg-items" class="scene-items"></div>
         <div id="qg-character" class="scene-character"></div>
+        <button id="qg-pet" class="scene-pet" type="button" hidden></button>
         <div class="smoke" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
         <div class="scene-light" aria-hidden="true"></div>
         <div id="status-fail" class="stamp" hidden>FAIL OUT</div>
@@ -159,10 +160,16 @@
           <h2 id="board-title" class="board-title"><span>Le top</span><span>du QG</span></h2>
           <p id="board-live" class="board-live"></p>
         </header>
-        <p id="board-message" class="board-message" hidden></p>
-        <ol id="board-list" class="board-list"></ol>
-        <div id="board-mine" class="board-mine" hidden></div>
-        <p class="board-foot">Classé selon l'argent total gagné pendant ta meilleure partie.</p>
+        <div class="tabs board-tabs" role="tablist" aria-label="Classements">
+          <button id="board-tab-record" class="tab is-active" type="button" role="tab" aria-selected="true" aria-controls="board-panel" data-board="record">🏆 Record</button>
+          <button id="board-tab-live" class="tab" type="button" role="tab" aria-selected="false" aria-controls="board-panel" data-board="live">⚡ Temps réel</button>
+        </div>
+        <div id="board-panel" role="tabpanel" aria-labelledby="board-tab-record">
+          <p id="board-message" class="board-message" hidden></p>
+          <ol id="board-list" class="board-list"></ol>
+          <div id="board-mine" class="board-mine" hidden></div>
+          <p id="board-foot" class="board-foot"></p>
+        </div>
       </section>
 
       <section id="card-profile" class="card card-profile only-classement">
@@ -219,6 +226,7 @@
           <div class="tabs only-studio" role="tablist">
             <button class="tab is-active" type="button" data-tab="producers">Le matos</button>
             <button class="tab" type="button" data-tab="upgrades">Déco du QG</button>
+            <button class="tab" type="button" data-tab="pets">Animaux</button>
           </div>
           <div class="tabs only-serre" role="tablist">
             <button class="tab" type="button" data-tab="equipment">Équipement</button>
@@ -226,6 +234,7 @@
           </div>
           <ul id="shop-producers" class="shop" data-panel="producers"></ul>
           <ul id="shop-upgrades" class="shop" data-panel="upgrades" hidden></ul>
+          <ul id="shop-pets" class="shop" data-panel="pets" hidden></ul>
           <ul id="shop-equipment" class="shop" data-panel="equipment" hidden></ul>
           <ul id="shop-strains" class="shop" data-panel="strains" hidden></ul>
         </section>
@@ -278,6 +287,28 @@
             <button id="sync-keep-local" class="btn btn-setting" type="button"><span>Garder celle-ci</span></button>
           </article>
         </div>
+      </div>
+    </section>
+
+    <section id="sheet-career" class="sheet sheet-career" role="dialog" aria-modal="true" aria-labelledby="sheet-career-title" hidden>
+      <header class="sheet-head">
+        <h2 id="sheet-career-title" class="sheet-title">Carrière de l'artiste</h2>
+        <button class="sheet-close" type="button" data-close aria-label="Fermer">✕</button>
+      </header>
+      <div class="sheet-body">
+        <div id="artist-hero" class="artist-hero"></div>
+        <section class="artist-section" aria-labelledby="artist-live-title">
+          <h3 id="artist-live-title" class="artist-section-title">⚡ Partie en cours</h3>
+          <p id="artist-live-note" class="hint artist-note" hidden></p>
+          <dl id="artist-live" class="artist-stats"></dl>
+          <ul id="artist-pets" class="artist-pets"></ul>
+        </section>
+        <section class="artist-section" aria-labelledby="artist-record-title">
+          <h3 id="artist-record-title" class="artist-section-title">🏆 Meilleure partie</h3>
+          <p id="artist-record-note" class="hint artist-note" hidden></p>
+          <dl id="artist-record" class="artist-stats"></dl>
+        </section>
+        <p id="artist-status" class="hint artist-note" role="status"></p>
       </div>
     </section>
 

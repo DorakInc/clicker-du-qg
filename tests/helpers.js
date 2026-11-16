@@ -17,6 +17,7 @@ export function loadData() {
     fx: read('fx'),
     online: read('online'),
     events: read('events'),
+    pets: read('pets'),
   };
 }
 

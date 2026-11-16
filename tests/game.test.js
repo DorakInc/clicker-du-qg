@@ -319,3 +319,50 @@ test('carte : la hype accumulée reste quand on change de campagne', () => {
   g.tick(s, data, 5);
   assert.equal(s.hype.quebec, kept);
 });
+
+test('animaux : adopter, puis des gâteries qui montent l\'amitié', () => {
+  const s = fresh();
+  const pet = data.pets.find((p) => p.effects.some((e) => e.stat === 'quality'));
+  s.money = pet.cost * 100;
+  s.tierIndex = pet.requiresTier - 1;
+  assert.deepEqual(g.buyPet(s, data, pet.id), [], 'verrouillé avant son palier');
+  s.tierIndex = pet.requiresTier;
+
+  const before = g.quality(s, data);
+  assert.deepEqual(types(g.buyPet(s, data, pet.id)), ['adoptPet']);
+  assert.equal(s.pets[pet.id], 1);
+  assert.equal(s.companion, pet.id, 'le nouvel animal vient à côté de toi');
+  const level1 = g.quality(s, data);
+  assert.ok(level1 > before, 'l\'inspiration monte la qualité des beats, même à jeun');
+
+  const money = s.money;
+  assert.deepEqual(types(g.buyPet(s, data, pet.id)), ['treatPet']);
+  assert.equal(money - s.money, g.petCost(pet, 1));
+  assert.ok(g.petCost(pet, 1) > pet.cost);
+  assert.equal(s.pets[pet.id], 2);
+  assert.ok(g.quality(s, data) > level1);
+});
+
+test('animaux : le compagnon doit être adopté, et tous les adoptés comptent', () => {
+  const s = fresh();
+  s.tierIndex = data.tiers.length - 1;
+  s.money = 1e12;
+  const [a, b] = data.pets;
+  assert.deepEqual(g.setCompanion(s, data, a.id), [], 'pas encore adopté');
+  g.buyPet(s, data, a.id);
+  g.buyPet(s, data, b.id);
+  assert.equal(s.companion, b.id);
+  const mods = g.getModifiers(s, data);
+  assert.deepEqual(types(g.setCompanion(s, data, a.id)), ['companion']);
+  assert.equal(s.companion, a.id);
+  assert.deepEqual(g.getModifiers(s, data), mods, 'changer de compagnon ne change pas les bonus');
+});
+
+test('animaux : une vieille sauvegarde sans animaux se relit', () => {
+  const s = fresh();
+  delete s.pets;
+  delete s.companion;
+  const loaded = g.deserialize(g.serialize(s), data);
+  assert.deepEqual(loaded.pets, {});
+  assert.equal(loaded.companion, '');
+});

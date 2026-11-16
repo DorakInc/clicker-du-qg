@@ -26,24 +26,40 @@
 .board-live.is-live::first-letter { color: var(--danger); }
 .board-message { margin: 0 0 12px; padding: 10px 12px; font-weight: 700; background: var(--paper-2); border: 2px dashed var(--ink); }
 
-.board-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 60vh; overflow-y: auto; }
+/* Les deux classements : record de la meilleure partie, partie en cours. */
+.board-tabs { margin-bottom: 12px; }
+.board-tabs .tab { font-size: .78rem; padding: 8px 6px; }
+
+.board-list { list-style: none; margin: 0; padding: 0 4px 4px 0; display: flex; flex-direction: column; gap: 6px; max-height: 60vh; overflow-y: auto; }
+/* Chaque ligne est un bouton : on la touche pour ouvrir la carrière du joueur. */
 .board-row {
   display: grid; grid-template-columns: 2.6em 32px minmax(0, 1fr) auto; align-items: center; gap: 10px;
-  padding: 6px 10px; background: var(--paper-2); border: 2px solid var(--ink);
+  width: 100%; padding: 6px 10px; cursor: pointer; text-align: left; font: inherit; color: var(--ink);
+  background: var(--paper-2); border: 2px solid var(--ink); transition: transform .06s, box-shadow .06s;
 }
+.board-row:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
+.board-row:active { transform: translate(1px, 1px); box-shadow: none; }
+.board-row:focus-visible { outline: 3px dashed var(--sunset); outline-offset: 2px; }
 .board-row.is-new { animation: pop .25s ease-out; }
 .board-row.is-me { background: #fff3a3; border-width: 3px; box-shadow: 3px 3px 0 var(--ink); }
 .board-rank {
   display: grid; place-items: center; height: 1.9em; font: 700 .9rem var(--font-label);
   background: var(--paper-3); border: 2px solid var(--ink);
 }
-.board-row:nth-child(1) .board-rank { background: var(--lamp); transform: rotate(-4deg); }
-.board-row:nth-child(2) .board-rank { background: #d9d4e4; transform: rotate(3deg); }
-.board-row:nth-child(3) .board-rank { background: #e8a87c; transform: rotate(-2deg); }
+#board-list > .board-item:nth-child(1) .board-rank { background: var(--lamp); transform: rotate(-4deg); }
+#board-list > .board-item:nth-child(2) .board-rank { background: #d9d4e4; transform: rotate(3deg); }
+#board-list > .board-item:nth-child(3) .board-rank { background: #e8a87c; transform: rotate(-2deg); }
 .board-who { min-width: 0; display: flex; flex-direction: column; }
 .board-pseudo { font-weight: 700; font-size: 1.05rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .board-tier { font-size: .8rem; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board-tier.is-playing { color: var(--weed-dark); font-weight: 700; }
+.board-flag {
+  margin-right: 5px; padding: 0 3px; vertical-align: 1px; font: .6rem var(--font-label); text-transform: uppercase;
+  color: var(--paper-2); background: var(--danger); border: 2px solid var(--ink);
+}
 .board-money { font: 700 1rem var(--font-label); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.board-figures { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; }
+.board-cash { font-size: .72rem; color: var(--ink-soft); white-space: nowrap; }
 .board-mine { margin-top: 10px; padding-top: 10px; border-top: 3px dotted var(--ink); }
 .board-mine .board-row { margin: 0; }
 .board-foot { margin: 12px 0 0; font-size: .8rem; color: var(--ink-soft); }
@@ -96,3 +112,55 @@
 .sync-summary span { font-size: .9rem; }
 .sync-summary strong { font: 700 1.05rem var(--font-label); }
 .sync-card .btn { margin-top: 10px; }
+
+/* ---- Carrière de l'artiste (on touche un joueur du classement) ---- */
+.sheet-career .sheet-head { background: var(--pink); }
+.artist-hero { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px; margin-bottom: 14px; }
+/* La petite scène : le personnage en pied, son animal à côté. */
+.artist-stage {
+  position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 2px;
+  width: 136px; height: 116px; padding-bottom: 6px; overflow: hidden;
+  background: linear-gradient(var(--stage, #8fb996) 72%, var(--paper-3) 72%);
+  border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
+}
+.artist-stage[data-character="emile"] { --stage: #d8b98a; }
+.artist-stage[data-character="xavier"] { --stage: var(--hood); }
+.artist-stage .sprite { flex-shrink: 0; }
+.artist-stage .pet-sprite { --s: 2; flex-shrink: 0; margin-bottom: 2px; }
+.artist-stage .board-face { width: 64px; height: 64px; margin-bottom: 14px; }
+.artist-stamp {
+  position: absolute; top: 6px; left: 50%; transform: translateX(-50%) rotate(-8deg); padding: 1px 5px;
+  font: 700 .7rem var(--font-label); color: var(--paper-2); background: var(--danger); border: 2px solid var(--ink); white-space: nowrap;
+}
+.artist-id { min-width: 0; }
+.artist-id p { margin: 0; }
+.artist-name {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+  font: 700 1.3rem var(--font); line-height: 1.1; overflow-wrap: anywhere;
+}
+.artist-you { padding: 1px 6px; font: .65rem var(--font-label); background: var(--lamp); border: 2px solid var(--ink); }
+.artist-tier { margin-top: 4px !important; font: 700 .78rem var(--font-label); }
+.artist-meta { font-size: .85rem; color: var(--ink-soft); }
+.artist-presence { margin-top: 4px !important; font: .7rem var(--font-label); color: var(--ink-soft); }
+.artist-presence.is-playing { color: var(--weed-dark); }
+.artist-ranks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px !important; }
+.artist-rank { padding: 2px 6px; font: 700 .68rem var(--font-label); background: var(--paper-2); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+
+.artist-section { margin-top: 14px; padding-top: 12px; border-top: 3px dotted var(--ink); }
+.artist-section-title { margin: 0 0 10px; font: 700 .95rem var(--font-label); text-transform: uppercase; }
+.artist-note { margin: 0 0 8px; }
+.artist-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(132px, 100%), 1fr)); gap: 6px; margin: 0; }
+.artist-stat { min-width: 0; padding: 6px 8px; background: var(--paper-2); border: 2px solid var(--ink); }
+.artist-stat dt { font: .6rem var(--font-label); color: var(--ink-soft); text-transform: uppercase; }
+.artist-stat dd { margin: 2px 0 0; font: 700 .95rem var(--font-label); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.artist-stat.is-big { background: #fff3a3; box-shadow: 2px 2px 0 var(--ink); }
+.artist-stat.is-big dd { font-size: 1.15rem; }
+
+.artist-pets { list-style: none; display: flex; flex-direction: column; gap: 6px; margin: 10px 0 0; padding: 0; }
+.artist-pet { display: flex; align-items: center; gap: 10px; padding: 6px 8px; background: var(--paper-2); border: 2px solid var(--ink); }
+.artist-pet .pet-sprite { --s: 2; flex-shrink: 0; }
+.artist-pet.is-companion { background: #ffe1ee; }
+.artist-pet.is-empty { font-size: .85rem; color: var(--ink-soft); border-style: dashed; }
+.artist-pet-text { display: flex; flex-direction: column; min-width: 0; }
+.artist-pet-text span { font-size: .8rem; color: var(--ink-soft); }
+#artist-status { margin-top: 12px; color: #b8322a; }
