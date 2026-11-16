@@ -12,6 +12,7 @@ import { createAudio } from './audio/audio.js';
 import { createFx } from './ui/fx/fx.js';
 import { createMotion, MOTION_MODES } from './ui/fx/motion.js';
 import { PROFILE_KEY, createLeaderboard } from './online/leaderboard.js';
+import { liveFromState } from './online/rules.js';
 import { createLeaderboardView } from './ui/leaderboard-view.js';
 
 const DATA_FILES = ['balance', 'characters', 'producers', 'upgrades', 'tiers', 'texts', 'sounds', 'greenhouse', 'map', 'fx', 'online', 'events', 'pets'];
@@ -201,39 +202,13 @@ function startGame(data, state, { audio, settings, motion, offline }) {
     settings.motion = next;
     storage.set(SETTINGS_KEY, JSON.stringify(settings));
     showMotion();
-
-  // ---- Classement en ligne (src/online/) ----
-  // ?classement=demo : faux serveur en mémoire, pour essayer sans compte Supabase.
-  // Le pseudo + code portent aussi la sauvegarde en ligne : la partie suit le joueur d'un appareil à l'autre.
-  const leaderboard = createLeaderboard({
-    config: data.online,
-    storage,
-    demo: new URLSearchParams(location.search).get('classement') === 'demo',
-    onMessage: (text, kind = '') => view.showMessage(text, kind),
-    getSaveText: () => {
-      state.lastSeen = Date.now();
-      return serialize(state);
-    },
-    isValidSave: (saved) => deserialize(JSON.stringify(saved), data) !== null,
-    onLoadSave(text) {
-      // Reprendre la partie en ligne : on remplace la sauvegarde locale et on relance le jeu.
-      resetting = true;
-      storage.set(SAVE_KEY, text);
-      location.reload();
-    },
-  });
-  createLeaderboardView(data, leaderboard, {
-    goToBoard: () => view.setScene('classement'),
-    openSheet: (id) => view.openSheet(id),
-    closeSheet: () => view.closeSheet(),
-  });
-  leaderboard.start(() => state);
   };
   showMotion();
 
   // ---- Classement en ligne (src/online/) ----
   // ?classement=demo : faux serveur en mémoire, pour essayer sans compte Supabase.
   // Le pseudo + code portent aussi la sauvegarde en ligne : la partie suit le joueur d'un appareil à l'autre.
+  // Avec la sauvegarde partent les stats publiques de la partie (onglet « Temps réel », page de carrière).
   const leaderboard = createLeaderboard({
     config: data.online,
     storage,
@@ -243,6 +218,7 @@ function startGame(data, state, { audio, settings, motion, offline }) {
       state.lastSeen = Date.now();
       return serialize(state);
     },
+    getLiveStats: () => liveFromState(state, data),
     isValidSave: (saved) => deserialize(JSON.stringify(saved), data) !== null,
     onLoadSave(text) {
       // Reprendre la partie en ligne : on remplace la sauvegarde locale et on relance le jeu.

@@ -7,9 +7,12 @@
 // sauvegarde en ligne que cet appareil connaît. Si une autre révision apparaît sur le serveur
 // (le joueur a joué ailleurs), on ne l'écrase jamais en silence : soit la partie locale vient de
 // commencer et on reprend celle en ligne, soit on demande au joueur laquelle garder.
+//
+// Avec chaque sauvegarde en ligne partent aussi les stats publiques de la partie en cours
+// (cash, $/s, abonnés...) : c'est l'onglet « Temps réel » et la page « Carrière de l'artiste ».
 
 import {
-  codeError, cleanPseudo, describeResult, isConfigured, isFreshGame, pseudoError, scoreFromState, summarize,
+  codeError, cleanPseudo, describeResult, isConfigured, isFreshGame, isMissingOnServer, pseudoError, scoreFromState, summarize,
 } from './rules.js';
 import { createMemoryBackend, createSupabaseBackend } from './backend.js';
 
@@ -18,13 +21,16 @@ const MIN_GAP_MS = 11000; // le serveur refuse plus d'un envoi par 10 s (score e
 
 /**
  * @param getSaveText  () => texte de la sauvegarde locale (serialize(state))
+ * @param getLiveStats () => stats publiques de la partie en cours (rules.liveFromState), ou null
  * @param onLoadSave   (texte) => remplace la partie de cet appareil par celle en ligne
  * @param isValidSave  (objet) => vrai si la sauvegarde est lisible par cette version du jeu
+ * @param backend      serveur à utiliser (tests) ; sinon démo, Supabase ou rien selon la configuration
  */
 export function createLeaderboard({
-  config, storage, demo = false, onMessage = () => {}, getSaveText = () => null, onLoadSave = () => {}, isValidSave = () => true,
+  config, storage, demo = false, onMessage = () => {}, getSaveText = () => null, getLiveStats = () => null,
+  onLoadSave = () => {}, isValidSave = () => true, backend: injected = null,
 }) {
-  const backend = demo ? createMemoryBackend({ storage }) : isConfigured(config) ? createSupabaseBackend(config) : null;
+  const backend = injected ?? (demo ? createMemoryBackend({ storage }) : isConfigured(config) ? createSupabaseBackend(config) : null);
   const listeners = new Set();
   let getState = () => null;
   let unsubscribe = null;
@@ -51,6 +57,10 @@ export function createLeaderboard({
     lastSentAt: 0,
     lastSentTotal: -1,
     updatedAt: null,
+    // Onglet « Temps réel » : la partie en cours de chaque joueur
+    liveRows: [],
+    liveMine: null, // { row, rank }
+    liveStatus: 'loading', // 'loading' | 'ok' | 'missing' (migration pas lancée) | 'error'
     // Sauvegarde en ligne
     cloud: {
       status: 'idle', // 'idle' | 'checking' | 'synced' | 'conflict' | 'missing' | 'error'
@@ -320,8 +330,10 @@ export function createLeaderboard({
         totalEarned: score.totalEarned,
         tierIndex: score.tierIndex,
         character: score.character,
+        stats: getLiveStats() ?? undefined,
       });
       if (result.status === 'ok') {
+        if (result.stats === 'invalid') console.warn('Temps réel : stats refusées par le serveur.');
         lb.profile.revision = result.revision;
         saveProfile();
         lastSavedTime = state.time;
@@ -397,7 +409,9 @@ export function createLeaderboard({
     refreshing = true;
     const previousRank = lb.mine?.rank ?? null;
     try {
-      lb.rows = await backend.top(config.topSize);
+      // Les deux onglets en même temps ; « Temps réel » peut échouer sans gâcher le record.
+      const [rows] = await Promise.all([backend.top(config.topSize), refreshLive()]);
+      lb.rows = rows;
       if (lb.profile) {
         const index = lb.rows.findIndex((row) => row.pseudo === lb.profile.pseudo);
         lb.mine = index >= 0 ? { row: lb.rows[index], rank: index + 1 } : await backend.mine(lb.profile.pseudo);
@@ -416,6 +430,46 @@ export function createLeaderboard({
       emit();
     }
   }
+
+  /** Onglet « Temps réel » : parties en cours, triées par $/s. Ne lance jamais d'erreur. */
+  async function refreshLive() {
+    if (!backend?.liveTop) {
+      lb.liveStatus = 'missing';
+      return;
+    }
+    try {
+      lb.liveRows = await backend.liveTop(config.topSize);
+      lb.liveStatus = 'ok';
+      const me = lb.profile?.pseudo;
+      const index = me ? lb.liveRows.findIndex((row) => row.pseudo === me) : -1;
+      if (!me) {
+        lb.liveMine = null;
+      } else if (index >= 0) {
+        lb.liveMine = { row: lb.liveRows[index], rank: index + 1 };
+      } else {
+        const career = await backend.career(me);
+        lb.liveMine = career.live ? { row: career.live, rank: career.liveRank } : null;
+      }
+    } catch (error) {
+      if (isMissingOnServer(error)) {
+        lb.liveStatus = 'missing';
+      } else {
+        console.warn('Classement (temps réel) :', error);
+        lb.liveStatus = 'error';
+      }
+    }
+  }
+
+  /** Page « Carrière de l'artiste » : record et partie en cours d'un joueur, avec ses rangs. */
+  lb.loadCareer = async (pseudo) => {
+    if (!backend?.career) return null;
+    try {
+      return await backend.career(pseudo);
+    } catch (error) {
+      console.warn('Carrière :', error);
+      return { error: describeResult({ status: 'network' }) };
+    }
+  };
 
   /** Messages au fil QGram quand on monte ou qu'un ami nous dépasse. */
   function announceRank(previousRank) {

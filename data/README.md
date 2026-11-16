@@ -18,7 +18,7 @@ Tout le contenu du jeu vit ici, séparé du code. Les volets B (visuel) et C (so
 | `texts.json` | Messages du jeu, réactions des fans, libellés des statistiques | Volet C |
 | `sounds.json` | Quel fichier audio joue pour quel événement | Volet C |
 | `fx.json` | Réglages des animations : plafonds de particules et de nombres flottants, seuils du « gros beat », durées de tenue (voir `docs/animations/`) | A et B |
-| `online.json` | Classement en ligne : adresse du projet Supabase et **clé publique** (jamais la clé secrète), taille du top, fréquence d'envoi. Vide = classement hors ligne. Voir `supabase/README.md` | A |
+| `online.json` | Classement en ligne : adresse du projet Supabase et **clé publique** (jamais la clé secrète), `topSize` (joueurs affichés dans chacun des deux onglets, Record et Temps réel), `submitEverySeconds` (envoi du score et de la sauvegarde ; les stats « Temps réel » partent avec la sauvegarde), `pollSeconds` (relecture si le direct ne marche pas). Vide = classement hors ligne. Voir `supabase/README.md` | A |
 | `pets.json` | Animaux de compagnie : prix d'adoption, palier, effets par niveau d'amitié | A (chiffres), B (images), C (noms, descriptions) |
 | `events.json` | Événements à la BitLife (police, impôts, beat viral…) : fréquence, conditions, effets, choix et leurs chances. Les textes sont à réécrire par le volet C. Essai direct : `?evenement=<id>` | A (règles), C (textes) |
 
