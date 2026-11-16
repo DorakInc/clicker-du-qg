@@ -1,0 +1,31 @@
+# Système
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Éditeurs
+.vscode/
+.idea/
+*.swp
+
+# Dépendances / builds
+node_modules/
+dist/
+build/
+
+# Secrets (ne jamais committer)
+.env
+.env.*
+
+# Fichiers de travail lourds : garder hors de Git, ne committer que les exports finaux
+*.psd
+*.psb
+*.kra
+*.aseprite-backup
+*.logicx/
+*.als
+*.flp
+*.ptx
+*.wav
+*.aif
+*.aiff
