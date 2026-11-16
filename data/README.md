@@ -47,10 +47,20 @@ Le jeu cherche les images à ces emplacements, par `id`. Tant qu'un fichier n'ex
 
 | Élément | Fichier |
 |---|---|
-| Portrait d'un personnage | `assets/images/personnages/<id>.png` (ex. `xavier.png`) |
+| Feuille de sprites d'un personnage | `assets/images/personnages/<id>-sheet.png` (ex. `xavier-sheet.png`) |
+| Décor du QG | `assets/images/qg/fond.png` (160 × 100, généré par `npm run sprites`) |
 | Objet du QG (upgrade acheté) | `assets/images/qg/<id>.png` (ex. `casque.png`) |
 
-Les animations (repos, beat, cannabis, échec) et le fond du QG par palier seront branchés quand le format des spritesheets sera fixé avec le volet B.
+### Personnages en pixel art
+
+Les sprites sont dessinés en code dans `scripts/sprites/characters.js`, d'après les photos de référence en T-pose. Après une modification, lancer `npm run sprites` pour régénérer les images.
+
+- Chaque image fait 32 × 48 pixels, affichée agrandie sans flou.
+- Feuille `<id>-sheet.png` : 3 lignes (face, profil tourné vers la droite, dos) × 2 images (respiration). Pour le profil gauche, on retourne l'image.
+- `<id>.png` : la vue de face seule.
+- `sprites.json` décrit la feuille pour le code.
+
+Les animations suivantes (faire un beat, réaction, effet du cannabis, échec) et le fond du QG par palier viendront ensuite.
 
 ## Sons (volet C)
 
@@ -67,3 +77,7 @@ Musique (`music`) : une boucle par ambiance, qui change selon l'état du jeu : `
 ## Textes (volet C)
 
 Dans `texts.json`, chaque message est une liste : une phrase est tirée au hasard. Les mots entre accolades sont remplacés par le jeu : `{name}`, `{tier}`, `{duration}`, `{money}`. Les textes actuels sont **temporaires**.
+
+- `ticker` : les phrases qui défilent sur la radio « QG FM » en haut de l'écran.
+- `fanHandles` : les noms d'utilisateur des fans dans le fil « QGram ».
+- `fanReactions` : ce que les fans écrivent quand l'audience monte (`up`) ou baisse (`down`).

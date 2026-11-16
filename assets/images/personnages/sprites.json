@@ -1,0 +1,16 @@
+{
+  "frameWidth": 32,
+  "frameHeight": 48,
+  "frames": 2,
+  "rows": {
+    "front": 0,
+    "side": 1,
+    "back": 2
+  },
+  "sideFacing": "right",
+  "sheets": {
+    "nathan": "nathan-sheet.png",
+    "emile": "emile-sheet.png",
+    "xavier": "xavier-sheet.png"
+  }
+}

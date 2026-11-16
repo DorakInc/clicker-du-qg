@@ -4,73 +4,109 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Clicker du QG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Silkscreen:wght@400;700&display=swap">
   <link rel="stylesheet" href="src/ui/style.css">
 </head>
 <body>
   <!-- Écran de sélection de personnage -->
-  <section id="select-screen" class="screen" hidden>
-    <h1 class="title">Clicker du QG</h1>
-    <p class="subtitle">Choisis ton artiste</p>
+  <section id="select-screen" class="select" hidden>
+    <div class="select-head">
+      <p class="logo logo-big"><span>Clicker</span><span>du QG</span></p>
+      <p class="select-sub">choisis ton chill guy</p>
+    </div>
     <div id="character-list" class="character-list"></div>
+    <p class="select-foot">aucun beat n'a été maltraité pendant la production de ce jeu</p>
   </section>
 
   <!-- Écran de jeu -->
-  <section id="game-screen" class="screen" hidden>
-    <header class="topbar">
-      <div class="stat stat-money"><span class="label">Argent</span><span id="stat-money" class="value"></span></div>
-      <div class="stat"><span class="label">Par seconde</span><span id="stat-income" class="value"></span></div>
-      <div class="stat"><span class="label">Par beat</span><span id="stat-beat-value" class="value"></span></div>
-      <div class="stat"><span class="label">Beats/s</span><span id="stat-bps" class="value"></span></div>
-      <div class="stat"><span class="label">Palier</span><span id="stat-tier" class="value"></span></div>
+  <section id="game-screen" class="game" hidden>
+    <header class="radio">
+      <p class="logo"><span>Clicker</span><span>du QG</span></p>
+      <div class="ticker" aria-hidden="true">
+        <span class="on-air">● QG FM</span>
+        <div class="ticker-window"><span id="ticker-text" class="ticker-text"></span></div>
+      </div>
+      <div class="money">
+        <span class="money-label">le cash</span>
+        <span id="stat-money" class="money-value"></span>
+      </div>
     </header>
 
+    <div class="chips">
+      <div class="chip"><span class="chip-label">par seconde</span><span id="stat-income" class="chip-value"></span></div>
+      <div class="chip"><span class="chip-label">par beat</span><span id="stat-beat-value" class="chip-value"></span></div>
+      <div class="chip"><span class="chip-label">beats/s</span><span id="stat-bps" class="chip-value"></span></div>
+      <div class="chip chip-tier"><span class="chip-label">palier</span><span id="stat-tier" class="chip-value"></span></div>
+    </div>
+
     <div class="layout">
-      <aside class="panel panel-left">
-        <h2>Fans</h2>
-        <div class="meter meter-fans"><div id="fans-fill" class="meter-fill"></div><div id="fans-ref" class="meter-marker"></div></div>
-        <p class="meter-caption"><span id="fans-count"></span> fans <span id="fans-trend" class="trend"></span></p>
-        <p id="next-tier" class="hint"></p>
-
-        <h2>Cannabis</h2>
-        <div class="meter meter-high"><div id="high-fill" class="meter-fill"></div><div id="overdose-marker" class="meter-marker meter-marker-danger"></div></div>
-        <p class="meter-caption">Qualité des beats : <strong id="quality"></strong></p>
-        <button id="buy-cannabis" class="btn btn-cannabis" type="button">Acheter du cannabis <span id="cannabis-price"></span></button>
-        <p class="hint">Plus tu en prends, plus le prix monte. Trop, et tu ne produis plus rien.</p>
-
-        <div id="status-fail" class="status status-fail" hidden>FAIL OUT : production ralentie, les fans décrochent.</div>
-        <div id="status-overdose" class="status status-overdose" hidden>Trop gelé : production ralentie.</div>
-      </aside>
-
-      <main class="stage">
-        <div id="qg" class="qg">
-          <div id="qg-items" class="qg-items"></div>
-          <div id="qg-character" class="qg-character"></div>
+      <main class="col-main">
+        <div id="qg" class="scene">
+          <div id="qg-items" class="scene-items"></div>
+          <div id="qg-character" class="scene-character"></div>
+          <div class="smoke" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="scene-light" aria-hidden="true"></div>
+          <div id="status-fail" class="stamp" hidden>FAIL OUT</div>
         </div>
-        <button id="beat-button" class="beat-button" type="button" aria-label="Faire un beat">
-          <span class="beat-button-label">BEAT</span>
-        </button>
-        <ul id="messages" class="messages" aria-live="polite"></ul>
+
+        <div class="deck">
+          <button id="beat-button" class="vinyl" type="button" aria-label="Faire un beat">
+            <span class="vinyl-disc"><span class="vinyl-label">BEAT</span></span>
+          </button>
+          <div class="tonearm" aria-hidden="true"></div>
+          <p class="deck-hint">clique sur le vinyle</p>
+        </div>
       </main>
 
-      <aside class="panel panel-right">
-        <div class="tabs" role="tablist">
-          <button class="tab is-active" type="button" data-tab="producers">Producteurs</button>
-          <button class="tab" type="button" data-tab="upgrades">Upgrades du QG</button>
-        </div>
-        <ul id="shop-producers" class="shop" data-panel="producers"></ul>
-        <ul id="shop-upgrades" class="shop" data-panel="upgrades" hidden></ul>
+      <aside class="col-left">
+        <section class="card">
+          <h2 class="card-title">Vibe check</h2>
+          <div class="meter-row"><span>abonnés</span><strong id="fans-count"></strong><span id="fans-trend" class="trend"></span></div>
+          <div class="meter meter-fans"><div id="fans-fill" class="meter-fill"></div><div id="fans-ref" class="meter-mark" title="Sous ce seuil : fail out"></div></div>
+          <p id="next-tier" class="hint"></p>
+        </section>
+
+        <section class="card card-stash">
+          <h2 class="card-title">Le stash</h2>
+          <div class="meter-row"><span>niveau de zen</span><strong id="quality"></strong></div>
+          <div class="meter meter-high"><div id="high-fill" class="meter-fill"></div><div id="overdose-marker" class="meter-mark meter-mark-danger" title="Au-delà : trop gelé"></div></div>
+          <button id="buy-cannabis" class="btn btn-weed" type="button">
+            <span>Se ravitailler</span><span id="cannabis-price" class="btn-price"></span>
+          </button>
+          <p class="hint">Meilleurs beats, mais le prix monte à chaque fois. Trop, et tu fixes le plafond.</p>
+          <p id="status-overdose" class="alert" hidden>Trop gelé. La prod ralentit.</p>
+          <p id="status-fail-text" class="alert alert-danger" hidden>Fail out : la prod ralentit et les abonnés décrochent.</p>
+        </section>
+      </aside>
+
+      <aside class="col-right">
+        <section class="card card-shop">
+          <div class="tabs" role="tablist">
+            <button class="tab is-active" type="button" data-tab="producers">Le matos</button>
+            <button class="tab" type="button" data-tab="upgrades">Déco du QG</button>
+          </div>
+          <ul id="shop-producers" class="shop" data-panel="producers"></ul>
+          <ul id="shop-upgrades" class="shop" data-panel="upgrades" hidden></ul>
+        </section>
+
+        <section class="phone">
+          <div class="phone-bar"><span>QGram</span><span>🔔</span></div>
+          <ul id="messages" class="feed" aria-live="polite"></ul>
+        </section>
       </aside>
     </div>
 
     <footer class="footer">
       <span id="save-status"></span>
-      <button id="toggle-sound" class="btn-link" type="button"></button>
-      <button id="reset" class="btn-link" type="button">Nouvelle partie</button>
+      <button id="toggle-sound" class="link" type="button"></button>
+      <button id="reset" class="link" type="button">Nouvelle partie</button>
     </footer>
   </section>
 
   <p id="load-error" class="load-error" hidden>
-    Impossible de charger les données du jeu. Lance le jeu avec un petit serveur local
+    Impossible de charger les données du jeu. Lance le jeu avec <code>npm start</code>
     (voir le README) au lieu d'ouvrir index.html directement.
   </p>
 
