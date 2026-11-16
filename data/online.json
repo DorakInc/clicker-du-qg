@@ -1,0 +1,7 @@
+{
+  "supabaseUrl": "https://wslowhhuoasqejdwzykb.supabase.co",
+  "supabaseKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzbG93aGh1b2FzcWVqZHd6eWtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ3NTMyOTgsImV4cCI6MjExMDMyOTI5OH0.PaTJ9Y_rdVvcqwu6cyYpBWSWDyRrG0TkZPPXK8-pImw",
+  "topSize": 50,
+  "submitEverySeconds": 60,
+  "pollSeconds": 30
+}

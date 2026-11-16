@@ -29,3 +29,6 @@ build/
 *.wav
 *.aif
 *.aiff
+
+# Config locale de Claude Code
+.claude/

@@ -1,0 +1,32 @@
+{
+  "effects": {
+    "click": [],
+    "buyProducer": [],
+    "buyUpgrade": [],
+    "cannabisBuy": [],
+    "cannabisEmpty": [],
+    "overdose": [],
+    "broke": [],
+    "failStart": [],
+    "failEnd": [],
+    "tierUp": [],
+    "characterSelect": [],
+    "harvest": [],
+    "buyEquipment": [],
+    "buyStrain": [],
+    "jointHomegrown": [],
+    "greenhouseUnlock": [],
+    "show": [],
+    "promo": [],
+    "samples": [],
+    "campaignStart": [],
+    "territoryConquered": [],
+    "mapUnlock": []
+  },
+  "music": {
+    "normal": null,
+    "cannabis": null,
+    "baisse": null,
+    "echec": null
+  }
+}

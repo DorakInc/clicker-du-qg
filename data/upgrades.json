@@ -1,0 +1,13 @@
+[
+  { "id": "casque", "name": "Casque fermé", "description": "Enfin entendre ses propres beats.", "cost": 100, "requiresTier": 0, "effects": [{ "stat": "click", "multiply": 2 }] },
+  { "id": "panneaux-acoustiques", "name": "Panneaux acoustiques", "description": "Des boîtes à œufs collées au mur.", "cost": 500, "requiresTier": 0, "effects": [{ "stat": "beatValue", "multiply": 1.25 }] },
+  { "id": "lampe-led", "name": "Bande LED", "description": "Violet. Obligatoirement violet.", "cost": 1000, "requiresTier": 1, "effects": [{ "stat": "churn", "multiply": 0.8 }] },
+  { "id": "chaise-gamer", "name": "Chaise gamer", "description": "Le dos dit merci.", "cost": 2500, "requiresTier": 1, "effects": [{ "stat": "bps", "multiply": 1.5 }] },
+  { "id": "moniteurs", "name": "Moniteurs de studio", "description": "Les basses font trembler le voisin.", "cost": 10000, "requiresTier": 2, "effects": [{ "stat": "beatValue", "multiply": 1.5 }] },
+  { "id": "canape", "name": "Divan du QG", "description": "Pour redescendre en douceur.", "cost": 25000, "requiresTier": 2, "effects": [{ "stat": "cannabisDecay", "multiply": 0.75 }] },
+  { "id": "neons", "name": "Néons", "description": "Le QG devient photogénique.", "cost": 75000, "requiresTier": 3, "effects": [{ "stat": "churn", "multiply": 0.75 }, { "stat": "fanGain", "multiply": 1.25 }] },
+  { "id": "vaporisateur", "name": "Vaporisateur", "description": "Plus efficace, moins de gaspillage.", "cost": 150000, "requiresTier": 3, "effects": [{ "stat": "cannabisPrice", "multiply": 0.8 }, { "stat": "cannabisPower", "multiply": 1.2 }] },
+  { "id": "micro-pro", "name": "Micro à lampes", "description": "Le son chaud des années 70.", "cost": 400000, "requiresTier": 4, "effects": [{ "stat": "beatValue", "multiply": 2 }] },
+  { "id": "cabine", "name": "Cabine d'enregistrement", "description": "Une vraie porte qui ferme.", "cost": 2000000, "requiresTier": 4, "effects": [{ "stat": "bps", "multiply": 2 }] },
+  { "id": "console-analogique", "name": "Console analogique", "description": "Plein de boutons, personne sait à quoi ils servent.", "cost": 15000000, "requiresTier": 5, "effects": [{ "stat": "beatValue", "multiply": 2 }, { "stat": "click", "multiply": 2 }] }
+]

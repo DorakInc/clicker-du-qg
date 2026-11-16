@@ -1,0 +1,26 @@
+{
+  "unlockTier": 3,
+  "clickGrams": 1,
+  "clickShareOfGrowth": 0.05,
+  "jointGrams": 10,
+  "equipment": [
+    {"id": "pot-de-yogourt", "name": "Pot de yogourt recyclé", "description": "Écologique et franchement douteux.", "baseCost": 50000, "costGrowth": 1.15, "gramsPerSecond": 0.2},
+    {"id": "lampe-del", "name": "Lampe DEL horticole", "description": "Rend la serre mauve. Le voisin pose des questions.", "baseCost": 400000, "costGrowth": 1.15, "gramsPerSecond": 1.5},
+    {"id": "tente-culture", "name": "Tente de culture", "description": "Comme du camping, mais pour les plantes.", "baseCost": 3000000, "costGrowth": 1.15, "gramsPerSecond": 10},
+    {"id": "hydroponie", "name": "Système hydroponique", "description": "Pu besoin de terre. Pu besoin de rien.", "baseCost": 25000000, "costGrowth": 1.15, "gramsPerSecond": 60},
+    {"id": "ventilation", "name": "Ventilation silencieuse", "description": "Silencieuse. Presque.", "baseCost": 200000000, "costGrowth": 1.15, "gramsPerSecond": 350},
+    {"id": "ami-botaniste", "name": "Ami botaniste", "description": "Parle aux plantes. Les plantes répondent.", "baseCost": 2000000000, "costGrowth": 1.15, "gramsPerSecond": 2000},
+    {"id": "serre-auto", "name": "Serre automatisée", "description": "Un robot arrose. Personne sait qui l'a programmé.", "baseCost": 20000000000, "costGrowth": 1.15, "gramsPerSecond": 12000},
+    {"id": "ferme-lunaire", "name": "Ferme lunaire", "description": "Faible gravité, gros rendement.", "baseCost": 300000000000, "costGrowth": 1.15, "gramsPerSecond": 80000}
+  ],
+  "strains": [
+    {"id": "kush-du-sous-sol", "name": "Kush du sous-sol", "description": "Pousse dans le noir, comme la carrière.", "cost": 100, "costGrowth": 4, "effects": [{"stat": "cannabisPower", "multiply": 1.08}]},
+    {"id": "mauve-laveuse", "name": "Mauve de la laveuse", "description": "Sent l'assouplissant.", "cost": 1000, "costGrowth": 4, "effects": [{"stat": "beatValue", "multiply": 1.1}]},
+    {"id": "og-panier-linge", "name": "OG Panier de linge", "description": "Personne veut la plier.", "cost": 5000, "costGrowth": 4, "effects": [{"stat": "cannabisDecay", "multiply": 0.94}]},
+    {"id": "sativa-voisin", "name": "Sativa du voisin d'en haut", "description": "Il sait pas qu'on l'a.", "cost": 20000, "costGrowth": 4, "effects": [{"stat": "bps", "multiply": 1.1}]},
+    {"id": "indica-divan", "name": "Indica du divan", "description": "Une fois assis, c'est fini.", "cost": 100000, "costGrowth": 4, "effects": [{"stat": "fanGain", "multiply": 1.1}, {"stat": "churn", "multiply": 0.97}]},
+    {"id": "haze-cosmique", "name": "Haze cosmique", "description": "Les beats sonnent en 4D.", "cost": 1000000, "costGrowth": 4, "effects": [{"stat": "beatValue", "multiply": 1.15}]},
+    {"id": "lunaire-1", "name": "Lunaire #1", "description": "Cultivée sur la Lune. Évidemment.", "cost": 10000000, "costGrowth": 4, "effects": [{"stat": "grow", "multiply": 1.15}, {"stat": "click", "multiply": 1.15}]},
+    {"id": "nebuleuse", "name": "Nébuleuse de minuit", "description": "Personne se souvient de l'avoir goûtée.", "cost": 100000000, "costGrowth": 4, "effects": [{"stat": "beatValue", "multiply": 1.2}, {"stat": "bps", "multiply": 1.05}]}
+  ]
+}

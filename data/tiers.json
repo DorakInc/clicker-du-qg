@@ -1,0 +1,12 @@
+[
+  {"id": "inconnu", "name": "Inconnu du quartier", "fansRequired": 0, "effects": []},
+  {"id": "soundcloud", "name": "Artiste SoundCloud", "fansRequired": 100, "effects": [{"stat": "beatValue", "multiply": 1.1}]},
+  {"id": "buzz-local", "name": "Buzz local", "fansRequired": 1000, "effects": [{"stat": "beatValue", "multiply": 1.1}]},
+  {"id": "revelation", "name": "Révélation de l'année", "fansRequired": 10000, "effects": [{"stat": "beatValue", "multiply": 1.15}]},
+  {"id": "tete-affiche", "name": "Tête d'affiche", "fansRequired": 100000, "effects": [{"stat": "beatValue", "multiply": 1.15}]},
+  {"id": "star", "name": "Star nationale", "fansRequired": 1000000, "effects": [{"stat": "beatValue", "multiply": 1.2}]},
+  {"id": "legende", "name": "Légende", "fansRequired": 10000000, "effects": [{"stat": "beatValue", "multiply": 1.25}]},
+  {"id": "icone-mondiale", "name": "Icône mondiale", "fansRequired": 1000000000, "effects": [{"stat": "beatValue", "multiply": 1.25}]},
+  {"id": "phenomene-planetaire", "name": "Phénomène planétaire", "fansRequired": 100000000000, "effects": [{"stat": "beatValue", "multiply": 1.3}]},
+  {"id": "legende-intergalactique", "name": "Légende intergalactique", "fansRequired": 10000000000000, "effects": [{"stat": "beatValue", "multiply": 1.5}]}
+]

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "xavier",
+    "name": "Xavier",
+    "strength": "Mélodies",
+    "description": "Texte temporaire : le roi des mélodies qui restent dans la tête.",
+    "effects": [{ "stat": "beatValue", "multiply": 1.25 }]
+  },
+  {
+    "id": "nathan",
+    "name": "Nathan",
+    "strength": "Paroles",
+    "description": "Texte temporaire : des punchlines qui font grimper l'audience.",
+    "effects": [{ "stat": "fanGain", "multiply": 1.3 }]
+  },
+  {
+    "id": "emile",
+    "name": "Émile",
+    "strength": "Beats",
+    "description": "Texte temporaire : il tape plus vite que son ombre.",
+    "effects": [{ "stat": "click", "multiply": 1.5 }, { "stat": "bps", "multiply": 1.1 }]
+  }
+]

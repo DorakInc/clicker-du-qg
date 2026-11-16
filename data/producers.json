@@ -1,0 +1,12 @@
+[
+  {"id": "boite-a-rythmes", "name": "Boîte à rythmes", "description": "Fait des beats toute seule, mal, mais toute seule.", "baseCost": 15, "costGrowth": 1.15, "beatsPerSecond": 0.1, "requiresTier": 0},
+  {"id": "clavier-midi", "name": "Clavier MIDI", "description": "Quatre octaves de potentiel.", "baseCost": 100, "costGrowth": 1.15, "beatsPerSecond": 1, "requiresTier": 0},
+  {"id": "logiciel-prod", "name": "Logiciel de prod", "description": "Une licence, probablement légale.", "baseCost": 1100, "costGrowth": 1.15, "beatsPerSecond": 8, "requiresTier": 1},
+  {"id": "ami-beatmaker", "name": "Ami beatmaker", "description": "Payé en pizza.", "baseCost": 12000, "costGrowth": 1.15, "beatsPerSecond": 47, "requiresTier": 2},
+  {"id": "inge-son", "name": "Ingé son", "description": "Dit « c'est la phase » à chaque prise.", "baseCost": 130000, "costGrowth": 1.15, "beatsPerSecond": 260, "requiresTier": 3},
+  {"id": "label-inde", "name": "Label indé", "description": "Prend 80 % mais connaît du monde.", "baseCost": 1400000, "costGrowth": 1.15, "beatsPerSecond": 1400, "requiresTier": 4},
+  {"id": "ferme-a-beats", "name": "Ferme à beats", "description": "Un entrepôt rempli de MPC.", "baseCost": 20000000, "costGrowth": 1.15, "beatsPerSecond": 7800, "requiresTier": 5},
+  {"id": "tournee-mondiale", "name": "Tournée mondiale", "description": "Vingt pays, un seul beat.", "baseCost": 330000000, "costGrowth": 1.15, "beatsPerSecond": 44000, "requiresTier": 6},
+  {"id": "studio-lunaire", "name": "Studio lunaire", "description": "Pas d'atmosphère, pas de voisins.", "baseCost": 5100000000, "costGrowth": 1.15, "beatsPerSecond": 260000, "requiresTier": 7},
+  {"id": "station-orbitale", "name": "Station de beats orbitale", "description": "Le kick s'entend de Mars.", "baseCost": 75000000000, "costGrowth": 1.15, "beatsPerSecond": 1600000, "requiresTier": 8}
+]

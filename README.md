@@ -4,12 +4,31 @@ Jeu clicker de gestion de carrière d'artiste : on fait des beats au QG, on gèr
 
 Le plan complet est dans [Plan de match - Clicker du QG.md](Plan%20de%20match%20-%20Clicker%20du%20QG.md).
 
+## Jouer
+
+Il faut [Node.js](https://nodejs.org) (version 18 ou plus), sur Mac comme sur Windows.
+
+```bash
+npm start
+```
+
+Puis ouvrir http://localhost:8000 dans le navigateur. La démonstration des animations est sur http://localhost:8000/demo/animations.html (voir [docs/animations/](docs/animations/charte.md)). Ouvrir `index.html` directement ne marche pas : le jeu doit charger ses fichiers de données.
+
+Pour vérifier la logique du jeu et les fichiers de `data/` :
+
+```bash
+npm test
+```
+
 ## Organisation du dépôt
 
 | Dossier | Volet | Contenu |
 |---|---|---|
-| `src/` | A, Gameplay et code | Logique du jeu, affichage, audio (code) |
-| `data/` | A et C | Fichiers de données : personnages, upgrades, paliers, textes (JSON) |
+| `src/game/` | A, Gameplay | Logique du jeu, sans affichage (testée par `npm test`) |
+| `src/ui/` | A, puis B | Affichage et style (provisoire) |
+| `src/audio/` | A | Lecture des sons déclarés dans `data/sounds.json` |
+| `data/` | A, B et C | Contenu du jeu en JSON : voir [data/README.md](data/README.md) |
+| `tests/` | A | Tests de la logique et des données |
 | `assets/images/` | B, Visuel | `personnages/`, `qg/`, `interface/`, `effets/` |
 | `assets/audio/` | C, Son | `musique/`, `effets/` (mp3 ou ogg) |
 
