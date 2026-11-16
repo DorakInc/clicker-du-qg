@@ -3,13 +3,19 @@
 // l'audio (src/audio).
 
 import {
-  SAVE_KEY, applyOffline, buyCannabis, buyProducer, buyUpgrade, click, createState,
-  deserialize, formatDuration, formatMoney, serialize, tick,
+  SAVE_KEY, applyOffline, buyCannabis, buyEquipment, buyProducer, buyStrain, buyUpgrade, click,
+  createState, deserialize, formatDuration, formatMoney, formatNumber, giveSamples, harvest, playShow,
+  rollJoint, runPromo, serialize, startCampaign, tick,
 } from './game/index.js';
 import { createGameView, showCharacterSelect } from './ui/view.js';
 import { createAudio } from './audio/audio.js';
+import { createFx } from './ui/fx/fx.js';
+import { createMotion, MOTION_MODES } from './ui/fx/motion.js';
+import { createLeaderboard } from './online/leaderboard.js';
+import { createLeaderboardView } from './ui/leaderboard-view.js';
 
-const DATA_FILES = ['balance', 'characters', 'producers', 'upgrades', 'tiers', 'texts', 'sounds'];
+const DATA_FILES = ['balance', 'characters', 'producers', 'upgrades', 'tiers', 'texts', 'sounds', 'greenhouse', 'map', 'fx', 'online'];
+const MOTION_LABELS = { auto: 'Animations : auto', reduced: 'Animations : réduites', full: 'Animations : complètes' };
 const SETTINGS_KEY = 'clicker-du-qg/settings';
 const RENDER_INTERVAL = 1 / 15; // l'affichage est rafraîchi 15 fois par seconde
 const FAN_TREND_INTERVAL = 5;
@@ -25,6 +31,12 @@ const MESSAGE_EVENTS = {
   failEnd: '',
   tierUp: '',
   buyUpgrade: '',
+  greenhouseUnlock: '',
+  jointHomegrown: '',
+  buyStrain: '',
+  mapUnlock: '',
+  campaignStart: '',
+  territoryConquered: '',
 };
 
 // ---- Stockage (protégé : navigation privée, stockage bloqué...) ----------
@@ -42,7 +54,8 @@ const storage = {
 };
 
 function loadSettings() {
-  try { return { sound: true, ...JSON.parse(storage.get(SETTINGS_KEY) ?? '{}') }; } catch { return { sound: true }; }
+  const defaults = { sound: true, motion: 'auto' };
+  try { return { ...defaults, ...JSON.parse(storage.get(SETTINGS_KEY) ?? '{}') }; } catch { return defaults; }
 }
 
 // ---- Textes --------------------------------------------------------------
@@ -85,38 +98,74 @@ async function boot() {
 
   const settings = loadSettings();
   const audio = createAudio(data.sounds, { enabled: settings.sound });
+  const motion = createMotion({ mode: settings.motion });
   document.addEventListener('pointerdown', () => audio.unlock(), { once: true });
   document.addEventListener('keydown', () => audio.unlock(), { once: true });
 
   const saved = deserialize(storage.get(SAVE_KEY) ?? '', data);
   if (saved) {
     const offline = applyOffline(saved, data);
-    startGame(data, saved, { audio, settings, offline });
+    startGame(data, saved, { audio, settings, motion, offline });
   } else {
     showCharacterSelect(data, (characterId) => {
       audio.unlock();
       audio.play('characterSelect');
       const state = createState(data, characterId);
       storage.set(SAVE_KEY, serialize(state));
-      startGame(data, state, { audio, settings, offline: null });
+      startGame(data, state, { audio, settings, motion, offline: null });
     });
   }
 }
 
-function startGame(data, state, { audio, settings, offline }) {
+function startGame(data, state, { audio, settings, motion, offline }) {
   const character = data.characters.find((c) => c.id === state.characterId);
   let resetting = false;
+
+  // Les animations trouvent les éléments de la page par la vue (créée juste après).
+  let viewRef = null;
+  const anchors = new Proxy({}, { get: (_, key) => viewRef?.anchors[key] });
+  const fx = createFx(data.fx, { anchors, motion });
+  fx.installPress();
+
+  /** Nombre de gain au point de contact (animation 05). */
+  function floatGain(event, button, amount, kind, format, level = 0) {
+    const rect = button.getBoundingClientRect();
+    const keyboard = !event.clientX && !event.clientY;
+    const home = { x: rect.left + rect.width / 2, y: rect.top };
+    fx.play('gain_float', {
+      x: keyboard ? home.x : event.clientX,
+      y: keyboard ? home.y : event.clientY,
+      home, amount, kind, format, level,
+      touch: event.pointerType === 'touch',
+    });
+  }
 
   const view = createGameView(data, {
     click(event) {
       const events = click(state, data);
-      const { earned } = events[0];
-      const rect = view.beatButton.getBoundingClientRect();
-      const x = event.clientX || rect.left + rect.width / 2;
-      const y = event.clientY || rect.top;
-      view.floatText(`+${formatMoney(earned)}`, x, y);
+      const { earned, quality } = events[0];
+      const level = fx.play('click_quality', { quality, target: view.beatButton.querySelector('.vinyl-label') });
+      floatGain(event, view.beatButton, earned, 'money', (n) => `+${formatMoney(n)}`, level);
       handle(events);
     },
+    harvest(event) {
+      const events = harvest(state, data);
+      if (!events.length) return;
+      floatGain(event, view.harvestButton, events[0].grams, 'grams', (n) => `+${formatNumber(n)} g`);
+      handle(events);
+    },
+    rollJoint: () => handle(rollJoint(state, data)),
+    startCampaign: (id) => handle(startCampaign(state, data, id)),
+    playShow(event) {
+      const events = playShow(state, data);
+      if (!events.length) return;
+      floatGain(event, view.showButton, events[0].hype, 'hype', (n) => `+${formatNumber(n)} hype`);
+      handle(events);
+    },
+    runPromo: () => handle(runPromo(state, data)),
+    giveSamples: () => handle(giveSamples(state, data)),
+    buyEquipment: (id) => handle(buyEquipment(state, data, id)),
+    buyStrain: (id) => handle(buyStrain(state, data, id)),
     buyCannabis: () => handle(buyCannabis(state, data)),
     buyProducer: (id) => handle(buyProducer(state, data, id)),
     buyUpgrade: (id) => handle(buyUpgrade(state, data, id)),
@@ -132,14 +181,54 @@ function startGame(data, state, { audio, settings, offline }) {
       view.setSoundLabel(settings.sound);
       storage.set(SETTINGS_KEY, JSON.stringify(settings));
     },
-  });
+  }, fx);
+  viewRef = view;
   view.setSoundLabel(settings.sound);
+
+  // Option mouvements réduits : auto (système) → réduites → complètes.
+  const motionButton = document.getElementById('toggle-motion');
+  const showMotion = () => { motionButton.textContent = MOTION_LABELS[motion.mode]; };
+  motionButton.onclick = () => {
+    const next = MOTION_MODES[(MOTION_MODES.indexOf(motion.mode) + 1) % MOTION_MODES.length];
+    motion.setMode(next);
+    settings.motion = next;
+    storage.set(SETTINGS_KEY, JSON.stringify(settings));
+    showMotion();
+
+  // ---- Classement en ligne (src/online/) ----
+  // ?classement=demo : faux serveur en mémoire, pour essayer sans compte Supabase.
+  const leaderboard = createLeaderboard({
+    config: data.online,
+    storage,
+    demo: new URLSearchParams(location.search).get('classement') === 'demo',
+    onMessage: (text, kind = '') => view.showMessage(text, kind),
+  });
+  createLeaderboardView(data, leaderboard, { goToBoard: () => view.setScene('classement') });
+  leaderboard.start(() => state);
+  };
+  showMotion();
+
+  // ---- Classement en ligne (src/online/) ----
+  // ?classement=demo : faux serveur en mémoire, pour essayer sans compte Supabase.
+  const leaderboard = createLeaderboard({
+    config: data.online,
+    storage,
+    demo: new URLSearchParams(location.search).get('classement') === 'demo',
+    onMessage: (text, kind = '') => view.showMessage(text, kind),
+  });
+  createLeaderboardView(data, leaderboard, { goToBoard: () => view.setScene('classement') });
+  leaderboard.start(() => state);
 
   function handle(events) {
     for (const event of events) {
       audio.play(event.type);
+      fx.onGameEvent(event);
+      if (event.type === 'tierUp') leaderboard.requestSubmit();
+      if (event.type === 'greenhouseUnlock') view.announceGreenhouse();
+      if (event.type === 'mapUnlock') view.announceMap();
       if (event.type in MESSAGE_EVENTS) {
-        const text = message(data, event.type, { tier: event.name, name: event.name });
+        const key = event.type === 'campaignStart' && event.rival ? 'campaignRival' : event.type;
+        const text = message(data, key, { tier: event.name, name: event.name, rival: event.rival });
         if (text) view.showMessage(text, MESSAGE_EVENTS[event.type]);
       }
     }
@@ -159,6 +248,9 @@ function startGame(data, state, { audio, settings, offline }) {
         duration: formatDuration(result.seconds),
         money: formatMoney(result.earned),
       }));
+    }
+    if (result && result.grams > 0) {
+      view.showMessage(message(data, 'offlineGrams', { grams: `${formatNumber(result.grams)} g` }));
     }
   }
 
@@ -184,7 +276,11 @@ function startGame(data, state, { audio, settings, offline }) {
       // Onglet en arrière-plan ou ordinateur en veille : calcul hors ligne.
       showOffline(applyOffline(state, data, Date.now()));
     } else {
+      const earnedBefore = state.totalEarned;
       handle(tick(state, data, dt));
+      fx.addIncome(state.totalEarned - earnedBefore); // revenu automatique → pièces (animation 22)
+      fx.update(dt);
+      leaderboard.tick(dt);
       state.lastSeen = Date.now();
     }
 

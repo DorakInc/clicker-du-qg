@@ -4,6 +4,7 @@
 import { SAVE_VERSION, createState } from './state.js';
 import { getModifiers } from './modifiers.js';
 import { rawBeatsPerSecond, beatValue } from './economy.js';
+import { addGrams, gramsPerSecond } from './greenhouse.js';
 
 export const SAVE_KEY = 'clicker-du-qg/save';
 
@@ -53,7 +54,9 @@ export function applyOffline(state, data, now = Date.now()) {
 
   state.money += earned;
   state.totalEarned += earned;
+  const grams = gramsPerSecond(state, data, mods) * offline.efficiency * seconds;
+  addGrams(state, grams);
   state.high = Math.max(0, state.high - cannabis.decayPerSecond * mods.cannabisDecay * seconds);
   state.tolerance = Math.max(0, state.tolerance - cannabis.toleranceDecayPerSecond * seconds);
-  return { seconds, earned };
+  return { seconds, earned, grams };
 }

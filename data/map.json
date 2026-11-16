@@ -1,0 +1,24 @@
+{
+  "unlockTier": 5,
+  "startTerritory": "quartier",
+  "hypePerSqrtFan": 1,
+  "showShareOfRate": 0.1,
+  "promo": {"share": 0.1, "incomeSeconds": 60, "growth": 2, "minCost": 1000},
+  "samples": {"share": 0.1, "growSeconds": 60, "growth": 2, "minCost": 100},
+  "territories": [
+    {"id": "quartier", "name": "Le quartier", "description": "Ton sous-sol, ta rue, ton dépanneur. Déjà à toi.", "x": 43, "y": 27, "requires": [], "hype": 0, "defense": 0, "effects": []},
+    {"id": "montreal", "name": "Montréal", "description": "La scène locale te regarde enfin.", "x": 47, "y": 22, "requires": ["quartier"], "hype": 300000, "defense": 0, "effects": [{"stat": "beatValue", "multiply": 1.15}]},
+    {"id": "quebec", "name": "Québec", "description": "Ils trippent sur le Carnaval. Toi aussi maintenant.", "x": 52, "y": 17, "requires": ["montreal"], "hype": 1000000, "defense": 0, "effects": [{"stat": "churn", "multiply": 0.9}]},
+    {"id": "toronto", "name": "Toronto", "description": "La 6ix. Un rappeur local garde le territoire.", "x": 36, "y": 31, "requires": ["montreal"], "hype": 2000000, "defense": 500, "rival": "MC Condo", "effects": [{"stat": "fanGain", "multiply": 1.15}]},
+    {"id": "new-york", "name": "New York", "description": "Là où tout a commencé. Le boss final du boom bap.", "x": 49, "y": 34, "requires": ["toronto", "quebec"], "hype": 10000000, "defense": 3000, "rival": "Big Apple Records", "effects": [{"stat": "beatValue", "multiply": 1.25}]},
+    {"id": "atlanta", "name": "Atlanta", "description": "Capitale de la trap. Les hi-hats vont vite ici.", "x": 41, "y": 43, "requires": ["new-york"], "hype": 30000000, "defense": 10000, "rival": "Lil Hi-Hat", "effects": [{"stat": "bps", "multiply": 1.25}]},
+    {"id": "los-angeles", "name": "Los Angeles", "description": "Soleil, palmiers et serres légales.", "x": 20, "y": 40, "requires": ["atlanta"], "hype": 150000000, "defense": 40000, "rival": "West Coast Vibes Inc.", "effects": [{"stat": "grow", "multiply": 1.3}]},
+    {"id": "londres", "name": "Londres", "description": "Il pleut, mais la drill est chaude.", "x": 73, "y": 24, "requires": ["new-york"], "hype": 30000000, "defense": 10000, "rival": "Tea Time Records", "effects": [{"stat": "click", "multiply": 1.5}]},
+    {"id": "paris", "name": "Paris", "description": "La French touch. Ils prononcent ton nom bizarre.", "x": 78, "y": 30, "requires": ["londres"], "hype": 60000000, "defense": 20000, "rival": "Croissant Records", "effects": [{"stat": "beatValue", "multiply": 1.25}]},
+    {"id": "berlin", "name": "Berlin", "description": "Le club ferme lundi. Peut-être.", "x": 86, "y": 25, "requires": ["paris", "londres"], "hype": 200000000, "defense": 50000, "rival": "DJ Bunker", "effects": [{"stat": "bps", "multiply": 1.25}, {"stat": "cannabisDecay", "multiply": 0.9}]},
+    {"id": "lagos", "name": "Lagos", "description": "L'afrobeats mène le monde. Tu suis le rythme.", "x": 82, "y": 55, "requires": ["paris"], "hype": 300000000, "defense": 60000, "rival": "Afrowave Collective", "effects": [{"stat": "fanGain", "multiply": 1.25}]},
+    {"id": "seoul", "name": "Séoul", "description": "Chorégraphie obligatoire. Tu apprends.", "x": 138, "y": 36, "requires": ["los-angeles", "berlin"], "hype": 800000000, "defense": 150000, "rival": "Groupe de 12 membres", "effects": [{"stat": "fanGain", "multiply": 1.2}, {"stat": "churn", "multiply": 0.9}]},
+    {"id": "tokyo", "name": "Tokyo", "description": "City pop, néons et vinyles hors de prix.", "x": 146, "y": 31, "requires": ["seoul"], "hype": 1500000000, "defense": 300000, "rival": "Neon Kissa", "effects": [{"stat": "beatValue", "multiply": 1.5}]},
+    {"id": "la-lune", "name": "La Lune", "description": "Pas d'air, pas de son. Le défi ultime.", "x": 150, "y": 9, "requires": ["tokyo", "lagos"], "requiresAll": true, "hype": 10000000000, "defense": 1000000, "rival": "Les extraterrestres", "effects": [{"stat": "beatValue", "multiply": 2}, {"stat": "bps", "multiply": 1.5}, {"stat": "grow", "multiply": 1.5}, {"stat": "click", "multiply": 2}]}
+  ]
+}

@@ -1,0 +1,80 @@
+/* Le classement : « le top du QG », une affiche de palmarès en papier.
+   Couleurs et contours : ceux de style.css. */
+
+.scene-tab-classement { margin-left: auto; }
+.scene-tab-classement.is-active { background: var(--pink); }
+
+.chip-rank { cursor: pointer; font: inherit; color: var(--ink); background: var(--lamp); border: 2px solid var(--ink); }
+.chip-rank .chip-label { color: var(--ink); }
+
+/* ---- Le tableau ---- */
+.board {
+  width: 100%; max-width: 720px; padding: 16px; color: var(--ink);
+  background: var(--paper); border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--shadow);
+}
+.board-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.board-title {
+  display: inline-flex; flex-direction: column; margin: 0; padding: 6px 14px 4px; line-height: 1;
+  font: 700 1.5rem var(--font-label); text-transform: uppercase;
+  background: var(--pink); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--shadow); transform: rotate(-2deg);
+}
+.board-title span:last-child { font-size: .75em; color: var(--paper-2); text-shadow: 2px 2px 0 var(--ink); }
+.board-live {
+  margin: 0; padding: 4px 10px; font: .75rem var(--font-label);
+  color: var(--lcd-text); background: var(--lcd); border: 3px solid var(--ink);
+}
+.board-live.is-live::first-letter { color: var(--danger); }
+.board-message { margin: 0 0 12px; padding: 10px 12px; font-weight: 700; background: var(--paper-2); border: 2px dashed var(--ink); }
+
+.board-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 60vh; overflow-y: auto; }
+.board-row {
+  display: grid; grid-template-columns: 2.6em 32px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  padding: 6px 10px; background: var(--paper-2); border: 2px solid var(--ink);
+}
+.board-row.is-new { animation: pop .25s ease-out; }
+.board-row.is-me { background: #fff3a3; border-width: 3px; box-shadow: 3px 3px 0 var(--ink); }
+.board-rank {
+  display: grid; place-items: center; height: 1.9em; font: 700 .9rem var(--font-label);
+  background: var(--paper-3); border: 2px solid var(--ink);
+}
+.board-row:nth-child(1) .board-rank { background: var(--lamp); transform: rotate(-4deg); }
+.board-row:nth-child(2) .board-rank { background: #d9d4e4; transform: rotate(3deg); }
+.board-row:nth-child(3) .board-rank { background: #e8a87c; transform: rotate(-2deg); }
+.board-who { min-width: 0; display: flex; flex-direction: column; }
+.board-pseudo { font-weight: 700; font-size: 1.05rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board-tier { font-size: .8rem; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board-money { font: 700 1rem var(--font-label); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.board-mine { margin-top: 10px; padding-top: 10px; border-top: 3px dotted var(--ink); }
+.board-mine .board-row { margin: 0; }
+.board-foot { margin: 12px 0 0; font-size: .8rem; color: var(--ink-soft); }
+
+/* Petit portrait : la tête du personnage, découpée dans sa feuille de sprites (2 × 32 × 48 par ligne). */
+.board-face {
+  display: inline-block; width: 28px; height: 28px; flex-shrink: 0;
+  border: 2px solid var(--ink); background-color: var(--stage, #8fb996);
+  background-repeat: no-repeat; background-size: 128px 288px; background-position: -18px -6px;
+  image-rendering: pixelated;
+}
+.board-face[data-character="emile"] { --stage: #d8b98a; }
+.board-face[data-character="xavier"] { --stage: var(--hood); }
+
+/* ---- Le profil ---- */
+.profile-form { display: flex; flex-direction: column; gap: 10px; }
+.profile-form .hint { margin: 0; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field span { font: .75rem var(--font-label); }
+.field input {
+  width: 100%; padding: 8px 10px; font: 700 1.05rem var(--font); color: var(--ink);
+  background: var(--paper-2); border: 3px solid var(--ink); box-shadow: inset 3px 3px 0 var(--paper-3);
+}
+#profile-code { letter-spacing: .4em; font-family: var(--font-label); }
+.field input:focus-visible { outline: 3px dashed var(--sunset); outline-offset: 2px; }
+.profile-form .btn { margin-top: 4px; }
+.profile-name { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font-size: 1.15rem; }
+.profile-rank { margin: 0; font: 700 1.4rem var(--font-label); }
+.profile-card .btn { margin-top: 10px; }
+.profile-leave { display: block; margin-top: 12px; font-size: .85rem; color: var(--ink-soft); }
+.profile-notice { margin: 12px 0 0; padding: 8px 10px; font-weight: 700; background: #c9f2d0; border: 2px solid var(--ink); }
+.profile-notice.is-error { background: #ffd0d0; border-color: var(--danger); }
+
+[data-motion="reduced"] .board-row.is-new { animation: none; }

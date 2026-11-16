@@ -64,7 +64,6 @@ button { font: inherit; color: inherit; }
 .character-card[data-character="emile"] { --stage: #d8b98a; }
 .character-card[data-character="xavier"] { --stage: var(--hood); }
 .character-card:hover, .character-card:focus-visible { transform: translate(-3px, -5px) rotate(-1.5deg); box-shadow: 10px 11px 0 var(--shadow); outline: none; }
-.character-card:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--shadow); }
 .character-portrait {
   --s: 3;
   height: 172px; display: grid; place-items: end center; padding-bottom: 6px; margin-bottom: 12px;
@@ -87,7 +86,7 @@ button { font: inherit; color: inherit; }
   width: calc(32px * var(--s, 3)); height: calc(48px * var(--s, 3));
   background-repeat: no-repeat; background-size: calc(64px * var(--s, 3)) calc(144px * var(--s, 3));
   background-position: 0 0; image-rendering: pixelated;
-  animation: sprite-breathe 1.4s steps(1) infinite;
+  /* animation : respiration selon l'humeur, voir fx.css */
 }
 @keyframes sprite-breathe { 50% { background-position: calc(-32px * var(--s, 3)) 0; } }
 
@@ -176,7 +175,6 @@ button { font: inherit; color: inherit; }
   margin-top: 14px; padding: 10px 14px; cursor: pointer; font-weight: 700; font-size: 1.05rem;
   border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); transition: transform .05s, box-shadow .05s;
 }
-.btn:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
 .btn:disabled { cursor: not-allowed; filter: grayscale(1); opacity: .55; }
 .btn-weed { background: var(--weed); color: var(--ink); }
 .btn-price { font-family: var(--font-label); font-size: .85rem; }
@@ -257,8 +255,6 @@ button { font: inherit; color: inherit; }
   background: #121214; border: 4px solid var(--ink); box-shadow: 0 0 0 6px #3a2a20;
   user-select: none; -webkit-tap-highlight-color: transparent;
 }
-.vinyl.hit { animation: hit .12s ease-out; }
-@keyframes hit { 50% { transform: scale(.94); } }
 .vinyl-disc {
   display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%;
   background:
@@ -283,12 +279,6 @@ button { font: inherit; color: inherit; }
 }
 .deck-hint { margin: 8px 0 0; font-family: var(--font-label); font-size: .7rem; color: var(--paper); opacity: .8; }
 
-.floater {
-  position: fixed; z-index: 10; pointer-events: none; white-space: nowrap;
-  font: 700 1.2rem var(--font-label); color: var(--lamp); text-shadow: 2px 2px 0 var(--shadow), -1px -1px 0 var(--shadow);
-  animation: float-up .9s ease-out forwards;
-}
-@keyframes float-up { to { transform: translate(var(--drift, 0), -80px) rotate(var(--tilt, 0)); opacity: 0; } }
 
 /* ---- La boutique ---- */
 .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
@@ -303,8 +293,7 @@ button { font: inherit; color: inherit; }
   background: var(--paper-2); color: var(--ink); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink);
   transition: transform .06s, box-shadow .06s;
 }
-.shop-item:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--ink); }
-.shop-item:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+.shop-item:hover:not(:disabled):not([aria-disabled="true"]) { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--ink); }
 .shop-item:disabled { cursor: not-allowed; }
 .is-locked .shop-item { opacity: .5; border-style: dashed; box-shadow: none; }
 .shop-item-name { font-weight: 700; font-size: 1.05rem; }
@@ -336,7 +325,111 @@ button { font: inherit; color: inherit; }
 
 .load-error { margin: 48px auto; max-width: 520px; padding: 16px; color: var(--ink); background: var(--paper); border: 3px solid var(--danger); }
 
-@media (prefers-reduced-motion: reduce) {
-  .sprite, .vinyl-disc, .ticker-text, .smoke i, .scene.is-overdosed, .on-air, .alert-danger { animation: none; }
-  .ticker-text { padding-left: 0; }
+
+/* ---- Studio / Serre ---- */
+.game:not([data-scene="studio"]) .only-studio,
+.game:not([data-scene="serre"]) .only-serre,
+.game:not([data-scene="carte"]) .only-carte,
+.game:not([data-scene="classement"]) .only-classement,
+.game[data-scene="carte"] .not-carte,
+.game[data-scene="classement"] .not-carte { display: none !important; }
+.scene-tabs { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; max-width: 720px; }
+.scene-tab {
+  padding: 8px 14px; cursor: pointer; font-family: var(--font-label); font-size: .85rem;
+  background: var(--night-3); color: var(--paper); border: 3px solid var(--ink);
 }
+.scene-tab.is-active { background: var(--lamp); color: var(--ink); box-shadow: 3px 3px 0 var(--shadow); }
+.scene-tab:disabled { cursor: not-allowed; opacity: .55; }
+.scene-tab.is-new { animation: blink 1s steps(1) infinite; background: var(--weed); color: var(--ink); }
+
+.scene-serre { background-color: #1d1838; background-image: url("../../assets/images/serre/fond.png"); }
+.scene-light-serre { background: radial-gradient(ellipse at 40% 20%, rgba(255, 95, 210, .14), transparent 60%); }
+.serre-plants { position: absolute; inset: 0; }
+.plant {
+  position: absolute; width: calc(16px * var(--s)); height: calc(24px * var(--s));
+  background: url("../../assets/images/serre/plante.png") no-repeat 0 0 / calc(48px * var(--s)) calc(24px * var(--s));
+  image-rendering: pixelated; transition: background-position 0s;
+}
+.plant[data-stage="1"] { background-position: calc(-16px * var(--s)) 0; }
+.plant[data-stage="2"] { background-position: calc(-32px * var(--s)) 0; }
+.serre-character { position: absolute; left: 73%; top: 50%; }
+
+.deck-serre { background: linear-gradient(#3f7d3a, #2d5c2a); }
+.harvest {
+  position: relative; display: grid; place-items: center; width: 210px; height: 210px; cursor: pointer;
+  border-radius: 50%; border: 4px solid var(--ink); background: radial-gradient(circle at 50% 40%, #6fcf5a, #2f6b2a);
+  box-shadow: 0 0 0 6px #234d20; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.harvest-plant {
+  --s: 5;
+  width: calc(16px * var(--s)); height: calc(24px * var(--s)); margin-top: -10px;
+  background: url("../../assets/images/serre/plante.png") no-repeat calc(-32px * var(--s)) 0 / calc(48px * var(--s)) calc(24px * var(--s));
+  image-rendering: pixelated; animation: sway 2.4s ease-in-out infinite; transform-origin: 50% 100%;
+}
+@keyframes sway { 50% { transform: rotate(4deg); } }
+.harvest-label {
+  position: absolute; bottom: 26px; padding: 2px 10px; font: 700 1rem var(--font-label);
+  color: var(--ink); background: var(--lamp); border: 3px solid var(--ink);
+}
+.btn-joint { background: #c9f2d0; color: var(--ink); }
+.chip-grams { background: var(--weed); color: var(--ink); }
+.chip-grams .chip-label { color: var(--ink); }
+
+/* ---- La carte ---- */
+.scene-carte { background-color: #16284a; background-image: url("../../assets/images/carte/fond.png"); }
+.carte-links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.carte-links line { stroke: rgba(246, 240, 200, .35); stroke-width: 2px; stroke-dasharray: 5 5; vector-effect: non-scaling-stroke; }
+.carte-links line.is-open { stroke: rgba(255, 209, 102, .7); }
+.carte-links line.is-done { stroke: var(--lamp); stroke-dasharray: none; }
+.carte-markers { position: absolute; inset: 0; image-rendering: auto; }
+.marker {
+  position: absolute; width: 22px; height: 22px; padding: 0; transform: translate(-50%, -50%); cursor: pointer;
+  display: grid; place-items: center; font: 700 .7rem var(--font-label);
+  background: var(--night-3); color: var(--paper); border: 3px solid var(--ink); box-shadow: 2px 2px 0 var(--shadow);
+}
+.marker.is-locked { opacity: .45; cursor: default; background: #4a4458; }
+.marker.is-available { background: var(--lamp); color: var(--ink); animation: marker-pulse 1.4s ease-in-out infinite; }
+.marker.is-conquered { background: var(--pink); color: var(--ink); }
+.marker.is-campaign { width: 30px; height: 30px; background: var(--sunset); color: var(--ink); animation: marker-pulse .8s ease-in-out infinite; }
+.marker.is-selected { outline: 3px solid var(--paper); outline-offset: 2px; }
+@keyframes marker-pulse { 50% { transform: translate(-50%, -50%) scale(1.18); } }
+@media (max-width: 760px) {
+  .marker { width: 14px; height: 14px; border-width: 2px; font-size: 0; }
+  .marker.is-campaign { width: 18px; height: 18px; }
+  .marker-label { font-size: .6rem; }
+}
+.marker-label {
+  position: absolute; top: 100%; left: 50%; transform: translate(-50%, 4px); white-space: nowrap; pointer-events: none;
+  padding: 1px 6px; font: 700 .7rem var(--font); color: var(--ink); background: var(--paper); border: 2px solid var(--ink);
+}
+
+.deck-carte { background: linear-gradient(#3a2b4f, #241a2e); }
+.show-btn {
+  position: relative; display: grid; place-items: center; width: 210px; height: 210px; cursor: pointer;
+  border-radius: 50%; border: 4px solid var(--ink); background: radial-gradient(circle at 50% 40%, #ff8a5b, #c2412b);
+  box-shadow: 0 0 0 6px #5a2a1f; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.show-btn:disabled { filter: grayscale(1); opacity: .6; cursor: not-allowed; }
+.show-mic { font-size: 4.5rem; margin-top: -18px; filter: drop-shadow(3px 3px 0 var(--ink)); }
+
+.territory-status { margin: 0 0 8px; font-family: var(--font-label); font-size: .75rem; }
+.territory-description { margin: 0 0 8px; color: var(--ink-soft); }
+.territory-rival { margin: 0 0 6px; font-weight: 700; color: #b8322a; }
+.territory-bonus { margin: 0 0 10px; font-weight: 700; color: var(--weed-dark); }
+.meter-hype .meter-fill { background: repeating-linear-gradient(90deg, var(--sunset) 0 10px, #e0663a 10px 12px); }
+.territory-progress .meter-row { margin: 6px 0 0; font-size: .85rem; }
+.rate-blocked { color: var(--danger); }
+.btn-campaign { background: var(--lamp); color: var(--ink); }
+.btn-promo { background: #ffd0e5; color: var(--ink); }
+.territory-boosts .btn { margin-top: 10px; }
+.territory-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; max-height: 32vh; overflow-y: auto; }
+.territory-list button {
+  display: flex; justify-content: space-between; gap: 8px; width: 100%; padding: 6px 10px; cursor: pointer; text-align: left;
+  background: var(--paper-2); color: var(--ink); border: 2px solid var(--ink); font-size: .9rem;
+}
+.territory-list button.is-selected { background: var(--lamp); }
+.territory-list .t-state { font-family: var(--font-label); font-size: .65rem; }
+.chip-territories { background: var(--sunset); color: var(--ink); }
+.chip-territories .chip-label { color: var(--ink); }
+
+/* Mouvements réduits : voir fx.css (option du jeu + réglage du système). */

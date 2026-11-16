@@ -10,7 +10,18 @@
     "failStart": [],
     "failEnd": [],
     "tierUp": [],
-    "characterSelect": []
+    "characterSelect": [],
+    "harvest": [],
+    "buyEquipment": [],
+    "buyStrain": [],
+    "jointHomegrown": [],
+    "greenhouseUnlock": [],
+    "show": [],
+    "promo": [],
+    "samples": [],
+    "campaignStart": [],
+    "territoryConquered": [],
+    "mapUnlock": []
   },
   "music": {
     "normal": null,

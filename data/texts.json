@@ -31,6 +31,33 @@
     ],
     "buyUpgrade": [
       "{name} installé au QG."
+    ],
+    "greenhouseUnlock": [
+      "La serre est débloquée ! Va voir l'onglet « La serre ». Fini d'acheter, on cultive."
+    ],
+    "jointHomegrown": [
+      "Joint maison. Goût de terroir.",
+      "Cultivé avec amour (et une lampe DEL).",
+      "Zéro dollar dépensé. Respect."
+    ],
+    "buyStrain": [
+      "Nouvelle variété : {name}."
+    ],
+    "offlineGrams": [
+      "Pendant ce temps, la serre a fait pousser {grams}."
+    ],
+    "mapUnlock": [
+      "La carte est débloquée ! Le monde entier attend tes beats. Onglet « La carte »."
+    ],
+    "campaignStart": [
+      "Campagne lancée : {name}. Fais des shows !"
+    ],
+    "campaignRival": [
+      "Campagne lancée : {name}. {rival} défend le territoire."
+    ],
+    "territoryConquered": [
+      "{name} est conquis ! Tout le monde connaît tes beats là-bas.",
+      "{name} : territoire conquis. Les radios locales jouent juste toi."
     ]
   },
   "fanReactions": {
@@ -53,7 +80,10 @@
     "churn": "perte de fans",
     "cannabisDecay": "vitesse de redescente",
     "cannabisPrice": "prix du cannabis",
-    "cannabisPower": "effet du cannabis"
+    "cannabisPower": "effet du cannabis",
+    "grow": "pousse de la serre",
+    "harvest": "récolte par clic",
+    "hype": "vitesse de conquête"
   },
   "ticker": [
     "QG FM, la radio des beats faits au sous-sol",

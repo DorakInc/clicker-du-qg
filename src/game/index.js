@@ -6,4 +6,6 @@ export * from './modifiers.js';
 export * from './economy.js';
 export * from './tick.js';
 export * from './save.js';
+export * from './greenhouse.js';
+export * from './conquest.js';
 export * from './format.js';

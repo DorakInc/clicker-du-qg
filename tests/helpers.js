@@ -12,6 +12,10 @@ export function loadData() {
     tiers: read('tiers'),
     texts: read('texts'),
     sounds: read('sounds'),
+    greenhouse: read('greenhouse'),
+    map: read('map'),
+    fx: read('fx'),
+    online: read('online'),
   };
 }
 

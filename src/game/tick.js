@@ -3,6 +3,8 @@
 
 import { getModifiers } from './modifiers.js';
 import { beatsPerSecond, cannabisPrice, produceBeats } from './economy.js';
+import { tickGreenhouse } from './greenhouse.js';
+import { tickConquest } from './conquest.js';
 
 export function tick(state, data, dt) {
   const events = [];
@@ -61,6 +63,9 @@ export function tick(state, data, dt) {
     mods = getModifiers(state, data);
     events.push({ type: 'tierUp', tierIndex: state.tierIndex, name: data.tiers[state.tierIndex].name });
   }
+
+  events.push(...tickGreenhouse(state, data, dt, mods));
+  events.push(...tickConquest(state, data, dt, mods));
 
   // À sec : plus de cannabis actif et pas assez d'argent pour en racheter.
   // L'alerte part une seule fois, puis se réarme au prochain achat de cannabis.

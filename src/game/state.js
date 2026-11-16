@@ -17,6 +17,19 @@ export function createState(data, characterId, now = Date.now()) {
     producers: {}, // { idProducteur: nombre possédé }
     upgrades: {}, // { idUpgrade: true }
     tierIndex: 0,
+    // La serre (débloquée à un palier de carrière)
+    greenhouseUnlocked: false,
+    grams: 0,
+    totalGrams: 0,
+    equipment: {}, // { idÉquipement: nombre possédé }
+    strains: {}, // { idVariété: niveau }
+    // La carte (débloquée à un palier de carrière)
+    mapUnlocked: false,
+    conquered: { [data.map?.startTerritory ?? 'quartier']: true }, // { idTerritoire: true }
+    campaign: '', // territoire en cours de conquête ('' = aucun)
+    hype: {}, // { idTerritoire: hype accumulée }
+    promoUses: {}, // { idTerritoire: nombre de campagnes promo }
+    sampleUses: {}, // { idTerritoire: nombre de distributions d'échantillons }
     failOut: false,
     broke: false,
     time: 0, // secondes jouées

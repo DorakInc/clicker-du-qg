@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Animations du QG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Silkscreen:wght@400;700&display=swap">
+  <link rel="stylesheet" href="../src/ui/style.css">
+  <link rel="stylesheet" href="../src/ui/fx.css">
+  <style>
+    /* Mise en page de la démo seulement ; les effets viennent de src/ui/fx.css. */
+    .demo { max-width: 1400px; margin: 0 auto; padding: 14px 16px 32px; }
+    .demo-head { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 14px; }
+    .demo-head h1 { margin: 0; font: 700 1.2rem var(--font-label); color: var(--lamp); }
+    .demo-head p { margin: 0; color: #b9a8c9; font-size: .9rem; }
+    .demo-layout { display: grid; gap: 18px; grid-template-columns: 300px minmax(0, 1fr); align-items: start; }
+    @media (max-width: 900px) { .demo-layout { grid-template-columns: minmax(0, 1fr); } }
+    .demo-controls { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 12px; }
+    .demo-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .demo-list button {
+      display: grid; grid-template-columns: 2.2em 1fr; gap: 6px; width: 100%; padding: 6px 8px; cursor: pointer; text-align: left;
+      background: var(--paper-2); color: var(--ink); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); font-size: .9rem;
+    }
+    .demo-list button .num { font-family: var(--font-label); color: var(--ink-soft); }
+    .demo-list button.is-last { background: var(--lamp); }
+    .demo-field { display: flex; flex-direction: column; gap: 4px; font-size: .9rem; }
+    .demo-field label, .demo-field span { font-family: var(--font-label); font-size: .7rem; }
+    .demo-field select, .demo-field input { font: inherit; }
+    .demo-check { display: flex; gap: 8px; align-items: center; font-size: .9rem; }
+    .demo-stats { margin: 0; padding: 8px; font: .75rem/1.5 ui-monospace, monospace; background: var(--lcd); color: var(--lcd-text); border: 3px solid var(--ink); white-space: pre-wrap; }
+    .demo-stage { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+    .demo-row { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
+    @media (max-width: 1150px) { .demo-row { grid-template-columns: minmax(0, 1fr); } }
+    .demo-col { display: flex; flex-direction: column; align-items: center; gap: 14px; min-width: 0; }
+    .demo-col-side { display: flex; flex-direction: column; gap: 14px; }
+    .demo-note { margin: 0; font-size: .8rem; color: #b9a8c9; }
+    #demo-map-tab { pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div class="demo">
+    <div class="demo-head">
+      <p class="logo"><span>Clicker</span><span>du QG</span></p>
+      <div>
+        <h1>Animations — lot pilote</h1>
+        <p>Chaque bouton lance une animation seule. Le vinyle, la boutique et « Se ravitailler » réagissent aussi comme dans le jeu.</p>
+      </div>
+    </div>
+
+    <div class="demo-layout">
+      <aside class="card demo-controls">
+        <h2 class="card-title">Lancer</h2>
+        <ul id="demo-list" class="demo-list"></ul>
+        <button id="demo-replay" class="btn btn-weed" type="button"><span>Rejouer la dernière</span><span class="btn-price">R</span></button>
+
+        <div class="demo-field">
+          <label for="demo-speed">Vitesse : <output id="demo-speed-value">1×</output></label>
+          <input id="demo-speed" type="range" min="0.25" max="2" step="0.25" value="1">
+        </div>
+        <div class="demo-field">
+          <label for="demo-motion">Mouvements</label>
+          <select id="demo-motion">
+            <option value="auto">auto (système)</option>
+            <option value="reduced">réduits</option>
+            <option value="full">complets</option>
+          </select>
+        </div>
+        <div class="demo-field">
+          <label for="demo-zen">Zen (pour 06 et le vinyle)</label>
+          <select id="demo-zen">
+            <option value="1">à jeun (×1,00)</option>
+            <option value="1.7">une dose (×1,70)</option>
+            <option value="2.4" selected>deux doses (×2,40)</option>
+          </select>
+        </div>
+        <div class="demo-field">
+          <label for="demo-mood">Humeur (pour 11)</label>
+          <select id="demo-mood">
+            <option value="normal">normal</option>
+            <option value="zen">zen</option>
+            <option value="fail">fail out</option>
+          </select>
+        </div>
+        <label class="demo-check"><input id="demo-income" type="checkbox" checked> Producteurs actifs (pièces, 22)</label>
+        <label class="demo-check"><input id="demo-on-map" type="checkbox" checked> Le joueur regarde la carte (55)</label>
+        <button id="demo-stress" class="btn btn-promo" type="button"><span>Mode stress</span><span class="btn-price">20 clics/s</span></button>
+        <pre id="demo-stats" class="demo-stats"></pre>
+      </aside>
+
+      <main class="demo-stage">
+        <header class="radio">
+          <div class="ticker"><span class="on-air">● QG FM</span><div class="ticker-window"><span class="ticker-text" style="--ticker-duration: 18s">Démo des animations : rien ici ne touche à ta sauvegarde.</span></div></div>
+          <div class="money">
+            <span class="money-label">le cash</span>
+            <span id="demo-money" class="money-value">1,2 K $</span>
+          </div>
+        </header>
+        <div class="chips">
+          <div class="chip chip-tier"><span class="chip-label">palier</span><span id="demo-tier" class="chip-value">Inconnu du quartier</span></div>
+          <div id="demo-territories" class="chip chip-territories"><span class="chip-label">territoires</span><span class="chip-value">1/14</span></div>
+          <button id="demo-map-tab" class="scene-tab" type="button">🗺️ La carte</button>
+        </div>
+
+        <div class="demo-row">
+          <div class="demo-col">
+            <div id="demo-qg" class="scene" style="--s: 4">
+              <div id="demo-character" class="scene-character"></div>
+              <div class="scene-light" aria-hidden="true"></div>
+            </div>
+            <div class="deck">
+              <button id="demo-vinyl" class="vinyl" type="button" aria-label="Faire un beat">
+                <span class="vinyl-disc"><span class="vinyl-label">BEAT</span></span>
+              </button>
+              <div class="tonearm" aria-hidden="true"></div>
+              <p class="deck-hint">clique sur le vinyle</p>
+            </div>
+          </div>
+          <div class="demo-col-side">
+            <section class="card card-shop">
+              <div class="tabs"><button class="tab is-active" type="button">Le matos</button><button class="tab" type="button">Déco du QG</button></div>
+              <ul id="demo-shop" class="shop"></ul>
+            </section>
+            <section class="card card-stash">
+              <h2 class="card-title">Le stash</h2>
+              <button id="demo-weed" class="btn btn-weed" type="button" aria-disabled="true">
+                <span>Se ravitailler</span><span id="demo-weed-price" class="btn-price">1,3 K $</span>
+              </button>
+              <p class="hint">Trop cher exprès : clique pour voir le refus (34).</p>
+            </section>
+          </div>
+        </div>
+
+        <div class="demo-row">
+          <div class="demo-col">
+            <div id="demo-carte" class="scene scene-carte">
+              <svg id="demo-links" class="carte-links" viewBox="0 0 160 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+              <div id="demo-markers" class="carte-markers"></div>
+            </div>
+          </div>
+          <div class="demo-col-side">
+            <section class="card card-territory">
+              <h2 class="card-title">Montréal</h2>
+              <p id="demo-territory-status" class="territory-status">▶ Campagne en cours</p>
+              <p class="territory-description">La scène locale te regarde enfin.</p>
+              <p id="demo-bonus" class="territory-bonus">Bonus : +15 % valeur des beats</p>
+              <div class="territory-progress">
+                <div class="meter meter-hype"><div id="demo-hype" class="meter-fill" style="width: 92%"></div></div>
+              </div>
+            </section>
+            <p class="demo-note">Si « Le joueur regarde la carte » est décoché, la conquête est mise de côté : l'onglet et la pastille le signalent, et la séquence se joue quand on recoche la case.</p>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="demo.js"></script>
+</body>
+</html>

@@ -12,7 +12,7 @@ Il faut [Node.js](https://nodejs.org) (version 18 ou plus), sur Mac comme sur Wi
 npm start
 ```
 
-Puis ouvrir http://localhost:8000 dans le navigateur. Ouvrir `index.html` directement ne marche pas : le jeu doit charger ses fichiers de données.
+Puis ouvrir http://localhost:8000 dans le navigateur. La démonstration des animations est sur http://localhost:8000/demo/animations.html (voir [docs/animations/](docs/animations/charte.md)). Ouvrir `index.html` directement ne marche pas : le jeu doit charger ses fichiers de données.
 
 Pour vérifier la logique du jeu et les fichiers de `data/` :
 

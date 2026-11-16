@@ -76,3 +76,47 @@ test('balance.json : le fail out peut toujours se terminer', () => {
   );
   assert.ok(fail.enterRatio < fail.exitRatio && fail.exitRatio <= 1, 'fail : enterRatio < exitRatio <= 1');
 });
+
+test('greenhouse.json', () => {
+  const gh = data.greenhouse;
+  assert.ok(gh.unlockTier >= 0 && gh.unlockTier < data.tiers.length, 'greenhouse.json : unlockTier');
+  checkIds(gh.equipment, 'greenhouse.json/equipment');
+  for (const e of gh.equipment) {
+    assert.ok(e.baseCost > 0 && e.costGrowth > 1 && e.gramsPerSecond > 0, `greenhouse.json/equipment/${e.id} : nombres`);
+  }
+  checkIds(gh.strains, 'greenhouse.json/strains');
+  for (const s of gh.strains) {
+    assert.ok(s.cost > 0 && s.costGrowth > 1, `greenhouse.json/strains/${s.id} : cost, costGrowth`);
+    checkEffects(s.effects, `greenhouse.json/strains/${s.id}`);
+  }
+});
+
+test('map.json', () => {
+  const map = data.map;
+  assert.ok(map.unlockTier >= 0 && map.unlockTier < data.tiers.length, 'map.json : unlockTier');
+  checkIds(map.territories, 'map.json/territories');
+  const ids = new Set(map.territories.map((t) => t.id));
+  assert.ok(ids.has(map.startTerritory), 'map.json : startTerritory doit exister');
+  for (const t of map.territories) {
+    const where = `map.json/territories/${t.id}`;
+    assert.ok(t.x >= 0 && t.x < 160 && t.y >= 0 && t.y < 100, `${where} : x de 0 à 159, y de 0 à 99`);
+    for (const r of t.requires) assert.ok(ids.has(r), `${where} : requires « ${r} » n'existe pas`);
+    if (t.id !== map.startTerritory) {
+      assert.ok(t.requires.length > 0, `${where} : il faut au moins un voisin dans requires`);
+      assert.ok(t.hype > 0, `${where} : hype`);
+    }
+    assert.ok((t.defense ?? 0) >= 0, `${where} : defense`);
+    checkEffects(t.effects, where);
+  }
+});
+
+test('fx.json : plafonds et seuils des animations', () => {
+  const { caps, quality, coins } = data.fx;
+  for (const [key, value] of Object.entries(caps)) assert.ok(Number.isInteger(value) && value > 0, `fx.json/caps.${key} : entier positif`);
+  assert.ok(caps.floatersVisible <= caps.floatersPool, 'fx.json : floatersVisible ne peut pas dépasser floatersPool');
+  assert.ok(caps.floatersPool + caps.particles + caps.coinsInFlight <= 80, 'fx.json : 80 nœuds d\'effets au maximum (charte)');
+  assert.ok(data.fx.confetti <= caps.particles, 'fx.json : les confettis viennent de la réserve de particules');
+  assert.ok(quality.good > 1 && quality.big > quality.good, 'fx.json : 1 < quality.good < quality.big');
+  assert.ok(coins.max >= 1 && coins.max <= caps.coinsInFlight, 'fx.json : coins.max entre 1 et caps.coinsInFlight');
+  assert.ok(data.fx.mergeMs > 0 && data.fx.mergeMsDuringMajor >= data.fx.mergeMs, 'fx.json : mergeMs');
+});

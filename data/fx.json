@@ -1,0 +1,30 @@
+{
+  "tempoBpm": 86,
+  "pixel": 4,
+  "caps": {
+    "floatersVisible": 6,
+    "floatersPool": 8,
+    "particles": 32,
+    "coinsInFlight": 18
+  },
+  "confetti": 24,
+  "mergeMs": 250,
+  "mergeMsDuringMajor": 500,
+  "majorGapMs": 500,
+  "quality": {
+    "good": 1.5,
+    "big": 2.2,
+    "notesGood": 2,
+    "notesBig": 4,
+    "minIntervalMs": 250
+  },
+  "coins": {
+    "intervalSeconds": 1.5,
+    "max": 6
+  },
+  "holdMs": {
+    "tierUp": 1500,
+    "conquest": 1200,
+    "refuseTag": 1200
+  }
+}

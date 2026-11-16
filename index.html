@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Silkscreen:wght@400;700&display=swap">
   <link rel="stylesheet" href="src/ui/style.css">
+  <link rel="stylesheet" href="src/ui/fx.css">
+  <link rel="stylesheet" href="src/ui/classement.css">
 </head>
 <body>
   <!-- Écran de sélection de personnage -->
@@ -21,7 +23,7 @@
   </section>
 
   <!-- Écran de jeu -->
-  <section id="game-screen" class="game" hidden>
+  <section id="game-screen" class="game" data-scene="studio" hidden>
     <header class="radio">
       <p class="logo"><span>Clicker</span><span>du QG</span></p>
       <div class="ticker" aria-hidden="true">
@@ -39,11 +41,21 @@
       <div class="chip"><span class="chip-label">par beat</span><span id="stat-beat-value" class="chip-value"></span></div>
       <div class="chip"><span class="chip-label">beats/s</span><span id="stat-bps" class="chip-value"></span></div>
       <div class="chip chip-tier"><span class="chip-label">palier</span><span id="stat-tier" class="chip-value"></span></div>
+      <div id="chip-grams" class="chip chip-grams" hidden><span class="chip-label">la récolte</span><span id="stat-grams" class="chip-value"></span></div>
+      <div id="chip-territories" class="chip chip-territories" hidden><span class="chip-label">territoires</span><span id="stat-territories" class="chip-value"></span></div>
+      <button id="chip-rank" class="chip chip-rank" type="button" hidden><span class="chip-label">classement</span><span id="stat-rank" class="chip-value"></span></button>
     </div>
 
     <div class="layout">
       <main class="col-main">
-        <div id="qg" class="scene">
+        <div class="scene-tabs" role="tablist">
+          <button class="scene-tab is-active" type="button" data-scene="studio">🎧 Le studio</button>
+          <button id="tab-serre" class="scene-tab" type="button" data-scene="serre" disabled>🔒 La serre</button>
+          <button id="tab-carte" class="scene-tab" type="button" data-scene="carte" disabled>🔒 La carte</button>
+          <button id="tab-classement" class="scene-tab scene-tab-classement" type="button" data-scene="classement">🏆 Classement</button>
+        </div>
+
+        <div id="qg" class="scene only-studio">
           <div id="qg-items" class="scene-items"></div>
           <div id="qg-character" class="scene-character"></div>
           <div class="smoke" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
@@ -51,12 +63,50 @@
           <div id="status-fail" class="stamp" hidden>FAIL OUT</div>
         </div>
 
-        <div class="deck">
+        <div id="serre" class="scene scene-serre only-serre">
+          <div id="serre-plants" class="serre-plants"></div>
+          <div id="serre-character" class="serre-character"></div>
+          <div class="scene-light scene-light-serre" aria-hidden="true"></div>
+        </div>
+
+        <div id="carte" class="scene scene-carte only-carte">
+          <svg id="carte-links" class="carte-links" viewBox="0 0 160 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <div id="carte-markers" class="carte-markers"></div>
+        </div>
+
+        <div class="deck only-studio">
           <button id="beat-button" class="vinyl" type="button" aria-label="Faire un beat">
             <span class="vinyl-disc"><span class="vinyl-label">BEAT</span></span>
           </button>
           <div class="tonearm" aria-hidden="true"></div>
           <p class="deck-hint">clique sur le vinyle</p>
+        </div>
+
+        <div class="deck deck-serre only-serre">
+          <button id="harvest-button" class="harvest" type="button" aria-label="Récolter">
+            <span class="harvest-plant"></span>
+            <span class="harvest-label">RÉCOLTER</span>
+          </button>
+          <p class="deck-hint">clique pour récolter</p>
+        </div>
+
+        <section id="classement" class="board only-classement" aria-labelledby="board-title">
+          <header class="board-head">
+            <h2 id="board-title" class="board-title"><span>Le top</span><span>du QG</span></h2>
+            <p id="board-live" class="board-live"></p>
+          </header>
+          <p id="board-message" class="board-message" hidden></p>
+          <ol id="board-list" class="board-list"></ol>
+          <div id="board-mine" class="board-mine" hidden></div>
+          <p class="board-foot">Classé selon l'argent total gagné pendant ta meilleure partie.</p>
+        </section>
+
+        <div class="deck deck-carte only-carte">
+          <button id="show-button" class="show-btn" type="button" aria-label="Faire un show">
+            <span class="show-mic" aria-hidden="true">🎤</span>
+            <span class="harvest-label">FAIRE UN SHOW</span>
+          </button>
+          <p id="show-hint" class="deck-hint"></p>
         </div>
       </main>
 
@@ -75,6 +125,9 @@
           <button id="buy-cannabis" class="btn btn-weed" type="button">
             <span>Se ravitailler</span><span id="cannabis-price" class="btn-price"></span>
           </button>
+          <button id="roll-joint" class="btn btn-joint" type="button" hidden>
+            <span>Joint maison</span><span id="joint-cost" class="btn-price"></span>
+          </button>
           <p class="hint">Meilleurs beats, mais le prix monte à chaque fois. Trop, et tu fixes le plafond.</p>
           <p id="status-overdose" class="alert" hidden>Trop gelé. La prod ralentit.</p>
           <p id="status-fail-text" class="alert alert-danger" hidden>Fail out : la prod ralentit et les abonnés décrochent.</p>
@@ -82,13 +135,60 @@
       </aside>
 
       <aside class="col-right">
-        <section class="card card-shop">
-          <div class="tabs" role="tablist">
+        <section class="card card-territory only-carte">
+          <h2 id="territory-name" class="card-title"></h2>
+          <p id="territory-status" class="territory-status"></p>
+          <p id="territory-description" class="territory-description"></p>
+          <p id="territory-rival" class="territory-rival"></p>
+          <p id="territory-bonus" class="territory-bonus"></p>
+          <div id="territory-progress" class="territory-progress">
+            <div class="meter meter-hype"><div id="territory-fill" class="meter-fill"></div></div>
+            <div class="meter-row"><span id="territory-hype"></span><strong id="territory-rate"></strong></div>
+          </div>
+          <button id="territory-start" class="btn btn-campaign" type="button"><span id="territory-start-label">Lancer la campagne</span></button>
+          <div id="territory-boosts" class="territory-boosts">
+            <button id="territory-promo" class="btn btn-promo" type="button"><span>Promo +10 %</span><span id="promo-cost" class="btn-price"></span></button>
+            <button id="territory-samples" class="btn btn-joint" type="button"><span>Échantillons +10 %</span><span id="samples-cost" class="btn-price"></span></button>
+          </div>
+        </section>
+
+        <section class="card card-territories only-carte">
+          <h2 class="card-title">Le monde</h2>
+          <ul id="territory-list" class="territory-list"></ul>
+        </section>
+
+        <section id="card-profile" class="card card-profile only-classement">
+          <h2 class="card-title">Ton profil</h2>
+          <form id="profile-form" class="profile-form" novalidate>
+            <p class="hint">Choisis un pseudo et un code secret de 4 chiffres. Le code sert à te reconnecter sur un autre appareil : pas de courriel, pas de mot de passe.</p>
+            <label class="field"><span>Pseudo</span><input id="profile-pseudo" name="pseudo" type="text" autocomplete="nickname" maxlength="16" spellcheck="false" required></label>
+            <label class="field"><span>Code secret</span><input id="profile-code" name="code" type="password" inputmode="numeric" autocomplete="off" pattern="[0-9]{4}" maxlength="4" required></label>
+            <button id="profile-join" class="btn btn-campaign" type="submit"><span>Entrer dans le classement</span><span class="btn-price">🏆</span></button>
+            <p class="hint">Déjà inscrit ailleurs ? Entre le même pseudo et le même code. Après 5 mauvais codes, le pseudo est bloqué 15 minutes.</p>
+          </form>
+          <div id="profile-card" class="profile-card" hidden>
+            <p class="profile-name"><span id="profile-face" class="board-face"></span><strong id="profile-current"></strong></p>
+            <p id="profile-rank" class="profile-rank"></p>
+            <p id="profile-sent" class="hint"></p>
+            <button id="profile-send" class="btn btn-weed" type="button"><span>Envoyer mon score</span><span class="btn-price">↑</span></button>
+            <button id="profile-leave" class="link profile-leave" type="button">Changer de pseudo sur cet appareil</button>
+          </div>
+          <p id="profile-notice" class="profile-notice" role="status" hidden></p>
+        </section>
+
+        <section class="card card-shop not-carte">
+          <div class="tabs only-studio" role="tablist">
             <button class="tab is-active" type="button" data-tab="producers">Le matos</button>
             <button class="tab" type="button" data-tab="upgrades">Déco du QG</button>
           </div>
+          <div class="tabs only-serre" role="tablist">
+            <button class="tab" type="button" data-tab="equipment">Équipement</button>
+            <button class="tab" type="button" data-tab="strains">Variétés</button>
+          </div>
           <ul id="shop-producers" class="shop" data-panel="producers"></ul>
           <ul id="shop-upgrades" class="shop" data-panel="upgrades" hidden></ul>
+          <ul id="shop-equipment" class="shop" data-panel="equipment" hidden></ul>
+          <ul id="shop-strains" class="shop" data-panel="strains" hidden></ul>
         </section>
 
         <section class="phone">
@@ -101,6 +201,7 @@
     <footer class="footer">
       <span id="save-status"></span>
       <button id="toggle-sound" class="link" type="button"></button>
+      <button id="toggle-motion" class="link" type="button"></button>
       <button id="reset" class="link" type="button">Nouvelle partie</button>
     </footer>
   </section>

@@ -107,18 +107,23 @@ export function click(state, data) {
   return [{ type: 'click', beats, earned, quality: quality(state, data, mods) }];
 }
 
-export function buyCannabis(state, data) {
+/** Effet d'une dose, qu'elle soit achetée ou cultivée à la serre. */
+export function consumeCannabis(state, data, event) {
   const c = data.balance.cannabis;
-  const price = cannabisPrice(state, data);
-  if (state.money < price) return [];
   const wasOverdosed = isOverdosed(state, data);
-  state.money -= price;
   state.high = Math.min(c.maxHigh, state.high + c.highPerPurchase);
   state.tolerance += 1;
   state.broke = false;
-  const events = [{ type: 'cannabisBuy', price }];
+  const events = [event];
   if (!wasOverdosed && isOverdosed(state, data)) events.push({ type: 'overdose' });
   return events;
+}
+
+export function buyCannabis(state, data) {
+  const price = cannabisPrice(state, data);
+  if (state.money < price) return [];
+  state.money -= price;
+  return consumeCannabis(state, data, { type: 'cannabisBuy', price });
 }
 
 export function buyProducer(state, data, id) {

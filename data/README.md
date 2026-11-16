@@ -13,8 +13,12 @@ Tout le contenu du jeu vit ici, séparé du code. Les volets B (visuel) et C (so
 | `producers.json` | Producteurs automatiques (beats par seconde) | A (chiffres), C (noms, descriptions) |
 | `upgrades.json` | Upgrades du QG, achetés une seule fois | A (chiffres), C (noms, descriptions) |
 | `tiers.json` | Paliers de carrière, débloqués par le record de fans | A (seuils), C (noms) |
+| `greenhouse.json` | La serre : palier de déblocage, équipement ($ → grammes), variétés (grammes → bonus) | A (chiffres), C (noms) |
+| `map.json` | La carte : territoires, voisins, hype à atteindre, rivaux, bonus de conquête | A (chiffres), C (noms, descriptions, rivaux) |
 | `texts.json` | Messages du jeu, réactions des fans, libellés des statistiques | Volet C |
 | `sounds.json` | Quel fichier audio joue pour quel événement | Volet C |
+| `fx.json` | Réglages des animations : plafonds de particules et de nombres flottants, seuils du « gros beat », durées de tenue (voir `docs/animations/`) | A et B |
+| `online.json` | Classement en ligne : adresse du projet Supabase et **clé publique** (jamais la clé secrète), taille du top, fréquence d'envoi. Vide = classement hors ligne. Voir `supabase/README.md` | A |
 
 ## Identifiants (`id`)
 
@@ -39,6 +43,10 @@ Personnages, upgrades et paliers ont une liste `effects`. Chaque effet multiplie
 | `cannabisPrice` | prix du cannabis |
 | `cannabisPower` | gain de qualité apporté par le cannabis |
 
+Les **variétés** de la serre ont des niveaux sans fin : le niveau N coûte `cost × costGrowth^N` grammes, et chaque niveau applique encore une fois ses `effects` (deux stats en plus : `grow` pour la pousse et `harvest` pour la récolte au clic).
+
+Les **territoires** de la carte (`map.json`) : `x` et `y` placent le marqueur sur la carte de 160 × 100 ; `requires` liste les voisins (un seul suffit, ou tous si `requiresAll` vaut `true`) ; `hype` est la barre à remplir ; `defense` est la hype que le rival enlève chaque seconde ; `effects` est le bonus permanent une fois conquis (stat en plus : `hype` pour la vitesse de conquête).
+
 `requiresTier` (producteurs, upgrades) est le numéro du palier qui débloque l'élément : 0 pour le premier palier de `tiers.json`, 1 pour le deuxième, etc.
 
 ## Images (volet B)
@@ -49,6 +57,9 @@ Le jeu cherche les images à ces emplacements, par `id`. Tant qu'un fichier n'ex
 |---|---|
 | Feuille de sprites d'un personnage | `assets/images/personnages/<id>-sheet.png` (ex. `xavier-sheet.png`) |
 | Décor du QG | `assets/images/qg/fond.png` (160 × 100, généré par `npm run sprites`) |
+| Décor de la serre | `assets/images/serre/fond.png` (160 × 100, généré) |
+| Plant de la serre | `assets/images/serre/plante.png` (3 stades de 16 × 24, généré) |
+| Carte du monde | `assets/images/carte/fond.png` (160 × 100, généré) |
 | Objet du QG (upgrade acheté) | `assets/images/qg/<id>.png` (ex. `casque.png`) |
 
 ### Personnages en pixel art
