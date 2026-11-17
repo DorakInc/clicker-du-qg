@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   abandonBattle, advanceRun, battleBlock, battlePayout, battleRivals, battleStakes, battleTarget, createChart,
-  createRun, createState, deserialize, songAt, songBars, finishBattle, rivalLevel, runAccuracy, runDone, serialize, startBattle, tapRun, tick,
+  createRun, createState, deserialize, genreById, genreFor, pickBpm, songAt, songBars, swingAt, finishBattle, rivalLevel, runAccuracy, runDone, serialize, startBattle, tapRun, tick,
 } from '../src/game/index.js';
 import { loadData } from './helpers.js';
 
@@ -34,20 +34,25 @@ function play(chart, hit) {
 
 test('battle.json : réglages valides', () => {
   const b = data.battle;
-  assert.ok(b.bpm > 0 && b.beats > 0 && b.leadInBeats >= 0, 'battle.json : bpm, beats, leadInBeats');
+  assert.ok(b.bpm.min > 0 && b.bpm.max >= b.bpm.min && b.beats > 0 && b.leadInBeats >= 0, 'battle.json : bpm, beats, leadInBeats');
   assert.ok(Number.isInteger(b.lanes) && b.lanes >= 2, 'battle.json : au moins 2 pistes');
-  assert.equal(b.instruments.length, b.lanes, 'battle.json : un instrument par piste');
-  for (const i of b.instruments) {
-    assert.match(i.id, /^[a-z0-9-]+$/, `battle.json : instrument « ${i.id} »`);
-    assert.equal(typeof i.name, 'string', `battle.json/instruments/${i.id}.name`);
-    assert.ok(Array.isArray(data.sounds.effects[i.sound]), `battle.json/instruments/${i.id} : son « ${i.sound} » absent de sounds.json`);
-    assert.ok([undefined, 'chord', 'root'].includes(i.tuned), `battle.json/instruments/${i.id}.tuned : "chord", "root" ou rien`);
+  assert.equal(b.lanes, 4, 'battle.json : 4 pistes, 4 instruments');
+  for (const g of b.genres) {
+    assert.equal(g.instruments.length, b.lanes, `battle.json/${g.id} : un instrument par piste`);
+    const ids = g.instruments.map((i) => i.id);
+    assert.equal(new Set(ids).size, ids.length, `battle.json/${g.id} : instruments en double`);
+    for (const i of g.instruments) {
+      assert.match(i.id, /^[a-z0-9-]+$/, `battle.json/${g.id} : instrument « ${i.id} »`);
+      assert.equal(typeof i.name, 'string', `battle.json/${g.id}/instruments/${i.id}.name`);
+      assert.ok((data.sounds.effects[i.sound] ?? []).length > 0, `battle.json/${g.id}/instruments/${i.id} : son « ${i.sound} » vide ou absent de sounds.json`);
+      assert.ok([undefined, 'chord', 'arpeggio', 'root'].includes(i.tuned), `battle.json/${g.id}/instruments/${i.id}.tuned : "chord", "arpeggio", "root" ou rien`);
+    }
   }
     // Le décompte fait une mesure de 4 temps, et la battle finit au bout d'une mesure.
   assert.equal(b.leadInBeats, 4, 'battle.json : le décompte dure une mesure (4 temps)');
   assert.equal(b.beats % 4, 0, 'battle.json : beats doit faire un nombre entier de mesures');
   assert.ok(b.windows.perfect > 0 && b.windows.good > b.windows.perfect, 'battle.json : 0 < perfect < good');
-  assert.ok(b.windows.good < 30 / b.bpm, 'battle.json : la fenêtre « good » doit rester sous un demi-contretemps');
+  assert.ok(b.windows.good < 30 / b.bpm.max, 'battle.json : la fenêtre « good » doit rester sous un demi-temps, même au tempo le plus rapide');
   assert.ok(b.points.perfect === 1 && b.points.good > 0 && b.points.good < 1, 'battle.json : points');
   assert.ok(b.stakes.length > 0 && b.stakes.every((s) => s > 0 && s <= 0.5), 'battle.json : mises entre 0 et 50 % du cash');
   assert.ok(b.cooldownSeconds >= 0 && typeof b.allowDuringFailOut === 'boolean', 'battle.json : cooldownSeconds, allowDuringFailOut');
@@ -56,9 +61,11 @@ test('battle.json : réglages valides', () => {
     assert.ok(easiest >= 0 && hardest <= 1 && easiest <= hardest, `battle.json : difficulty.${key}`);
   }
   assert.ok(b.difficulty.target.hardest < 1, 'battle.json : le rival le plus fort doit rester battable');
-  // Une battle dure environ 20 s.
-  const seconds = (b.leadInBeats + b.beats) * 60 / b.bpm;
-  assert.ok(seconds >= 12 && seconds <= 30, `battle.json : une battle dure ${seconds.toFixed(1)} s`);
+  // Une battle dure de 15 à 30 s, du tempo le plus lent au plus rapide.
+  for (const bpm of [b.bpm.min, b.bpm.max]) {
+    const seconds = (b.leadInBeats + b.beats) * 60 / bpm;
+    assert.ok(seconds >= 15 && seconds <= 30, `battle.json : à ${bpm} BPM, une battle dure ${seconds.toFixed(1)} s`);
+  }
 });
 
 test('les rivaux : plus de défense, plus dur à battre', () => {
@@ -115,67 +122,103 @@ test('la mise : une part du cash, jamais plus de la moitié', () => {
   assert.ok(stakes.every((s) => s.amount <= 5000));
 });
 
-test('la chanson : couplet et refrain de 4 mesures, un accord par mesure, fin sur la tonique', () => {
-  const { song, chords } = data.battle;
-  const bars = songBars(data);
-  assert.equal(data.battle.beats, bars.length * 4, 'battle.json : beats = 4 × le nombre de mesures de la chanson');
-  for (const section of song.sections) {
-    assert.equal(typeof section.name, 'string');
-    assert.ok([4, 8].includes(section.chords.length), `${section.name} : une phrase de 4 ou 8 mesures`);
-    for (const c of section.chords) assert.ok(chords[c], `${section.name} : accord « ${c} » absent de chords`);
+test('le tempo : tiré entre 88 et 130 BPM, et chaque tempo a exactement un genre', () => {
+  const { bpm, genres } = data.battle;
+  assert.equal(bpm.min, 88);
+  assert.equal(bpm.max, 130);
+  assert.equal(pickBpm(data, fixed(0)), 88);
+  assert.equal(pickBpm(data, fixed(0.9999)), 130);
+  for (let x = bpm.min; x <= bpm.max; x += 1) {
+    const matching = genres.filter((g) => x >= g.bpm.min && x <= g.bpm.max);
+    assert.equal(matching.length, 1, `${x} BPM : ${matching.length} genres (il en faut exactement un)`);
+    assert.equal(genreFor(data, x).id, matching[0].id);
   }
-  for (const [name, c] of Object.entries(chords)) {
-    assert.ok(Number.isInteger(c.root) && c.notes.length >= 3 && c.notes.every(Number.isInteger), `chords.${name}`);
-    // La fondamentale fait partie de l'accord (à l'octave près).
-    assert.ok(c.notes.some((n) => (((n - c.root) % 12) + 12) % 12 === 0), `chords.${name} : la fondamentale doit être dans les notes`);
-  }
-  // Une phrase qui finit sur V7 se résout sur I : la chanson finit sur l'accord du début.
-  assert.equal(song.ending, song.sections[0].chords[0], 'la fin revient à l\'accord de départ');
-  assert.equal(chords[song.ending].root, 0, 'la tonique est le do des fichiers son');
-
-  assert.equal(songAt(data, -4).chord, 'Cmaj7', 'pendant le décompte : le premier accord');
-  assert.deepEqual([0, 4, 8, 12].map((b) => songAt(data, b).chord), ['Cmaj7', 'Am7', 'Dm7', 'G7']);
-  assert.equal(songAt(data, 3.5).chord, 'Cmaj7', 'le « et » du 4e temps reste dans la mesure');
-  assert.equal(songAt(data, 16).sectionName, 'Refrain');
-  assert.equal(songAt(data, 16).chord, 'Fmaj7');
-  const end = songAt(data, data.battle.beats);
-  assert.equal(end.ending, true);
-  assert.equal(end.chord, 'Cmaj7');
+  assert.equal(genreFor(data, 90).id, 'boom-bap');
+  assert.equal(genreFor(data, 105).id, 'afrobeats');
+  assert.equal(genreFor(data, 124).id, 'house');
 });
 
-test('la partition joue un vrai beat : piano au 1, caisse claire sur 2 et 4, kick sur 3', () => {
-  const lane = (id) => data.battle.instruments.findIndex((i) => i.id === id);
-  const spb = 60 / data.battle.bpm;
-  const beatOf = (n) => Math.round((n.t / spb - data.battle.leadInBeats) * 2) / 2;
-  const easy = createChart(data, 'toronto', fixed(0.99));
-  assert.equal(easy.notes.length, data.battle.beats + 1, 'sans hasard favorable : une note par temps, plus l\'accord de fin');
-  for (const n of easy.notes) {
-    const beatInBar = ((beatOf(n) % 4) + 4) % 4;
-    const expected = [lane('piano'), lane('caisse-claire'), lane('kick'), lane('caisse-claire')][beatInBar];
-    assert.equal(n.lane, expected, `temps ${beatOf(n)} : mauvaise piste`);
+test('les genres : chanson en phrases de 4 mesures, un accord par mesure, fin sur l\'accord de départ', () => {
+  const { genres, chords } = data.battle;
+  const ids = genres.map((g) => g.id);
+  assert.equal(new Set(ids).size, ids.length, 'genres : identifiants en double');
+  for (const [name, c] of Object.entries(chords)) {
+    assert.ok(Number.isInteger(c.root) && c.notes.length >= 3 && c.notes.every(Number.isInteger), `chords.${name}`);
+    assert.ok(c.notes.some((n) => (((n - c.root) % 12) + 12) % 12 === 0), `chords.${name} : la fondamentale doit être dans les notes`);
   }
-  assert.ok(Math.abs(easy.notes[0].t - data.battle.leadInBeats * spb) < 1e-9, 'la première note tombe après le décompte');
-  assert.equal(beatOf(easy.notes.at(-1)), data.battle.beats, 'la dernière note est l\'accord de fin');
-  assert.ok(easy.duration > easy.notes.at(-1).t + data.battle.windows.good, 'la battle finit après la dernière note');
+  for (const g of genres) {
+    const where = `genres/${g.id}`;
+    assert.equal(typeof g.name, 'string', `${where}.name`);
+    assert.ok(g.swing >= 0.5 && g.swing < 0.75, `${where}.swing : de 0,5 (droit) à 0,75`);
+    assert.equal(data.battle.beats, songBars(g).length * 4, `${where} : beats = 4 × le nombre de mesures de la chanson`);
+    for (const section of g.song.sections) {
+      assert.ok([4, 8].includes(section.chords.length), `${where}/${section.name} : une phrase de 4 ou 8 mesures`);
+      for (const c of section.chords) assert.ok(chords[c], `${where}/${section.name} : accord « ${c} » absent de chords`);
+    }
+    assert.equal(g.song.ending, g.song.sections[0].chords[0], `${where} : la fin revient à l'accord de départ`);
+    // Le beat : 1 ou 2 mesures, des instruments du genre, et chaque instrument a des notes au niveau le plus facile.
+    const lanes = g.instruments.map((i) => i.id);
+    assert.ok([4, 8].includes(g.groove.base.length), `${where}.groove.base : 4 ou 8 temps`);
+    for (const id of lanes) assert.ok(g.groove.base.includes(id), `${where}.groove.base : « ${id} » n'a aucune note au niveau facile`);
+    for (const l of [...g.groove.base, ...g.groove.doubles.map((d) => d.lane), ...g.groove.offbeats.map((o) => o.lane)]) {
+      assert.ok(lanes.includes(l), `${where}.groove : instrument « ${l} » inconnu`);
+    }
+    for (const o of g.groove.offbeats) assert.ok(o.at > 0 && o.at < 1, `${where}.groove.offbeats : at entre 0 et 1`);
+    // Le métronome : une mesure, au moins un coup sur chaque temps, des sons qui existent.
+    for (let beat = 0; beat < 4; beat += 1) assert.ok(g.metronome.some((h) => h.at === beat), `${where}.metronome : rien sur le temps ${beat + 1}`);
+    for (const h of g.metronome) {
+      assert.ok(h.at >= 0 && h.at < 4, `${where}.metronome : at de 0 à 4`);
+      assert.ok((data.sounds.effects[h.sound] ?? []).length > 0, `${where}.metronome : son « ${h.sound} » vide ou absent`);
+    }
+  }
+  const boomBap = genreById(data, 'boom-bap');
+  assert.equal(songAt(data, boomBap, -4).chord, 'Cmaj7', 'pendant le décompte : le premier accord');
+  assert.deepEqual([0, 4, 8, 12].map((b) => songAt(data, boomBap, b).chord), ['Cmaj7', 'Am7', 'Dm7', 'G7']);
+  assert.equal(songAt(data, boomBap, 3.5).chord, 'Cmaj7', 'le « et » du 4e temps reste dans la mesure');
+  assert.equal(songAt(data, boomBap, 16).sectionName, 'Refrain');
+  const end = songAt(data, genreById(data, 'house'), data.battle.beats);
+  assert.equal(end.ending, true);
+  assert.equal(end.chord, 'Am7', 'la house finit sur la mineur');
+});
 
-  const hard = createChart(data, 'la-lune', fixed(0.05));
-  assert.ok(hard.notes.length > easy.notes.length, 'contretemps et notes doubles');
-  for (let i = 1; i < hard.notes.length; i += 1) assert.ok(hard.notes[i].t >= hard.notes[i - 1].t, 'notes triées');
-  for (const n of hard.notes) assert.ok(n.lane >= 0 && n.lane < data.battle.lanes, 'piste valide');
-  const seen = new Set(hard.notes.map((n) => `${n.t.toFixed(4)}:${n.lane}`));
-  assert.equal(seen.size, hard.notes.length, 'deux notes au même moment ne tombent jamais sur la même piste');
-  // Les contretemps suivent le groove : kick après 2 et 3, piano après 4.
-  for (const n of hard.notes.filter((x) => beatOf(x) % 1 !== 0)) {
-    const after = Math.floor(((beatOf(n) % 4) + 4) % 4) + 1;
-    const off = data.battle.groove.offbeats.find((o) => o.beat === after);
-    assert.ok(off && n.lane === lane(off.lane), `contretemps après le temps ${after} : mauvaise piste`);
+test('la partition joue le beat du genre, au tempo tiré', () => {
+  for (const [bpm, genreId] of [[92, 'boom-bap'], [106, 'afrobeats'], [124, 'house']]) {
+    const g = genreById(data, genreId);
+    const lane = (id) => g.instruments.findIndex((i) => i.id === id);
+    const spb = 60 / bpm;
+    const beatOf = (n) => n.t / spb - data.battle.leadInBeats;
+    const easy = createChart(data, 'toronto', fixed(0.99), bpm);
+    assert.equal(easy.bpm, bpm);
+    assert.equal(easy.genre, genreId);
+    assert.ok(Math.abs(easy.spb - spb) < 1e-12);
+    assert.equal(easy.notes.length, data.battle.beats + 1, `${genreId} : sans hasard favorable, une note par temps plus l'accord de fin`);
+    for (const n of easy.notes) {
+      const beat = Math.round(beatOf(n));
+      assert.equal(n.lane, lane(g.groove.base[beat % g.groove.base.length]), `${genreId}, temps ${beat} : mauvaise piste`);
+    }
+    assert.ok(easy.duration > easy.notes.at(-1).t + data.battle.windows.good, `${genreId} : la battle finit après la dernière note`);
+
+    const hard = createChart(data, 'la-lune', fixed(0.05), bpm);
+    assert.ok(hard.notes.length > easy.notes.length, `${genreId} : contretemps et notes doubles`);
+    for (let i = 1; i < hard.notes.length; i += 1) assert.ok(hard.notes[i].t >= hard.notes[i - 1].t, 'notes triées');
+    const seen = new Set(hard.notes.map((n) => `${n.t.toFixed(4)}:${n.lane}`));
+    assert.equal(seen.size, hard.notes.length, `${genreId} : deux notes au même moment jamais sur la même piste`);
+    // Sur une même piste, deux notes sont plus loin que la fenêtre de frappe (une frappe vise la plus proche).
+    for (let l = 0; l < data.battle.lanes; l += 1) {
+      const times = hard.notes.filter((n) => n.lane === l).map((n) => n.t);
+      for (let i = 1; i < times.length; i += 1) assert.ok(times[i] - times[i - 1] > data.battle.windows.good, `${genreId} : notes trop proches sur la piste ${l}`);
+    }
+    // Les contretemps tombent là où le genre les met (swing compris).
+    const allowed = g.groove.offbeats.map((o) => swingAt(g, o.at));
+    for (const n of hard.notes) {
+      const frac = beatOf(n) - Math.floor(beatOf(n) + 1e-9);
+      if (frac < 1e-6 || frac > 1 - 1e-6) continue;
+      assert.ok(allowed.some((a) => Math.abs(a - frac) < 1e-6), `${genreId} : contretemps à ${frac.toFixed(2)} du temps`);
+    }
   }
-  // Le refrain est plus chargé que le couplet.
-  const mid = (data.battle.leadInBeats + 16) * spb;
-  const some = createChart(data, 'new-york', (() => { let i = 0; return () => [0.1, 0.3, 0.5, 0.7, 0.9][i++ % 5]; })());
-  const verse = some.notes.filter((n) => n.t < mid).length;
-  const chorus = some.notes.filter((n) => n.t >= mid).length;
-  assert.ok(chorus >= verse, `refrain (${chorus}) au moins aussi chargé que le couplet (${verse})`);
+  // Le boom bap est swingué : son « et » arrive après le milieu du temps.
+  assert.ok(swingAt(genreById(data, 'boom-bap'), 0.5) > 0.5);
+  assert.equal(swingAt(genreById(data, 'house'), 0.5), 0.5);
 });
 
 test('le jugement : parfait, bon, raté, et frappes dans le vide', () => {

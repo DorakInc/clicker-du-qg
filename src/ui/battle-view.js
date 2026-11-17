@@ -6,29 +6,36 @@
 //   actions.getState()                     → l'état du jeu, pour les mises et les blocages
 // `audio` (src/audio/audio.js) donne l'horloge et joue les sons.
 //
-// Son et image calés : le métronome est programmé d'avance sur l'horloge audio
-// (décompte 1-2-3-4 aux baguettes, puis le charleston sur chaque temps et chaque croche,
-// plus fort au 1er temps de la mesure), et l'image lit la même horloge. Une note touche
+// Chaque battle a son tempo (88 à 130 BPM) et le genre qui va avec : boom bap, afrobeats
+// ou house (data/battle.json → genres ; src/game/battle.js choisit).
+// Son et image calés : le métronome du genre est programmé d'avance sur l'horloge audio
+// (décompte 1-2-3-4 aux baguettes, puis charleston swingué en boom bap, shaker 3-3-2 en
+// afrobeats, charleston fermé et ouvert en house), et l'image lit la même horloge. Une note touche
 // la ligne exactement quand le temps sonne. Pas de batterie de fond : c'est le joueur qui
-// joue le beat avec les pads (data/battle.json → instruments). Tout suit la grille
+// joue le beat avec les 4 pads, les instruments du genre (data/battle.json → genres → instruments). Tout suit la grille
 // d'accords de la chanson (song, chords ; demi-tons autour du do des fichiers son) : le
 // piano joue l'accord de la mesure (tuned: "chord"), le kick sa fondamentale
 // (tuned: "root"). Une note ratée ne fait aucun bruit.
 
 import {
-  advanceRun, songAt, battleBlock, battleCooldownLeft, battlePayout, battleStakes, battleTarget, createRun, formatDuration,
+  advanceRun, genreById, songAt, swingAt, battleBlock, battleCooldownLeft, battlePayout, battleStakes, battleTarget, createRun, formatDuration,
   formatMoney, formatNumber, runAccuracy, runDone, tapRun,
 } from '../game/index.js';
 
 const $ = (id) => document.getElementById(id);
-const LANE_KEYS = [['arrowleft', 'a', 'j', '1'], ['arrowdown', 's', 'k', '2'], ['arrowright', 'd', 'l', '3']];
+// Une touche par piste, de gauche à droite : A S D F, J K L ;, les flèches ou 1 2 3 4.
+const LANE_KEYS = [['a', 'j', 'arrowleft', '1'], ['s', 'k', 'arrowdown', '2'], ['d', 'l', 'arrowup', '3'], ['f', ';', 'arrowright', '4']];
 // Icône de chaque instrument (même id que data/battle.json). Pas d'émoji de grosse caisse : on la dessine.
 const KICK_ICON = '<svg viewBox="0 0 32 32" width="34" height="34" aria-hidden="true" shape-rendering="crispEdges">'
   + '<rect x="6" y="4" width="20" height="2" fill="#241a2e"/><rect x="4" y="6" width="24" height="20" fill="#241a2e"/>'
   + '<rect x="6" y="26" width="20" height="2" fill="#241a2e"/><rect x="6" y="6" width="20" height="20" fill="#ff7eb6"/>'
   + '<rect x="8" y="8" width="16" height="16" fill="#fbf4e6"/><rect x="11" y="13" width="10" height="6" fill="#ff8a5b"/>'
   + '<rect x="2" y="28" width="4" height="2" fill="#6b5a72"/><rect x="26" y="28" width="4" height="2" fill="#6b5a72"/></svg>';
-const ICONS = { 'caisse-claire': '🥁', piano: '🎹', kick: KICK_ICON };
+const ICONS = {
+  kick: KICK_ICON, 'caisse-claire': '🥁', rhodes: '🎹', contrebasse: '🎻', // boom bap
+  rimshot: '🥁', guitare: '🎸', conga: '🪘', // afrobeats
+  clap: '👏', piano: '🎹', basse: '🎛️', // house
+};
 const LOOKAHEAD_BEATS = 2.5; // une note apparaît en haut 2,5 temps avant de toucher la ligne
 const LINE = 0.86; // hauteur de la ligne de frappe, en part de la piste
 const JUDGE_TEXT = { perfect: 'Parfait !', good: 'Bien', stray: 'Dans le vide', miss: 'Raté' };
@@ -43,8 +50,8 @@ const pct = (x) => `${Math.round(x * 100)} %`;
 
 export function createBattleView(data, actions, { openSheet, closeSheet, audio }) {
   const lanes = data.battle.lanes;
-  const instruments = data.battle.instruments;
-  const secondsPerBeat = 60 / data.battle.bpm;
+  let genre = data.battle.genres[0]; // genre de la battle en cours
+  let instruments = genre.instruments; // les 4 instruments du genre, un par piste
   let territoryId = '';
   let shareIndex = 0;
   let run = null; // partie en cours
@@ -71,17 +78,28 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
     pad.className = 'battle-pad';
     const icon = document.createElement('span');
     icon.className = 'battle-pad-icon';
-    icon.innerHTML = ICONS[instruments[i]?.id] ?? String(i + 1);
     const name = document.createElement('span');
     name.className = 'battle-pad-name';
-    name.textContent = instruments[i]?.name ?? `Piste ${i + 1}`;
     pad.append(icon, name);
-    pad.setAttribute('aria-label', instruments[i]?.name ?? `Piste ${i + 1}`);
     pad.addEventListener('pointerdown', (event) => { event.preventDefault(); tap(i); });
     // Au clavier (Entrée / espace sur le pad), le clic arrive sans pointerdown.
     pad.addEventListener('click', (event) => { if (event.detail === 0) tap(i); });
     return pad;
   });
+
+  /** Les pads prennent les instruments du genre de la battle. */
+  function setInstruments(list) {
+    instruments = list;
+    padEls.forEach((pad, i) => {
+      const instrument = list[i];
+      pad.querySelector('.battle-pad-icon').innerHTML = ICONS[instrument?.id] ?? String(i + 1);
+      pad.querySelector('.battle-pad-name').textContent = instrument?.name ?? `Piste ${i + 1}`;
+      pad.setAttribute('aria-label', instrument?.name ?? `Piste ${i + 1}`);
+      pad.dataset.instrument = instrument?.id ?? '';
+      laneEls[i].dataset.instrument = instrument?.id ?? '';
+    });
+  }
+  setInstruments(instruments);
   $('battle-pads').replaceChildren(...padEls);
   $('battle-lanes').style.setProperty('--lanes', String(lanes));
   $('battle-pads').style.setProperty('--lanes', String(lanes));
@@ -114,7 +132,7 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
     if (!state || !t) return;
     const goal = battleTarget(data, territoryId);
     $('battle-title').textContent = `Battle : ${t.name}`;
-    $('battle-intro').textContent = `${t.rival} défend ${t.name}. Fais plus de ${pct(goal)} de précision pour gagner.`;
+    $('battle-intro').textContent = `${t.rival} défend ${t.name}. Fais plus de ${pct(goal)} de précision pour gagner. Le tempo (${data.battle.bpm.min} à ${data.battle.bpm.max} BPM) et le genre sont tirés au hasard.`;
     const stakes = battleStakes(state, data);
     stakes.forEach((s, i) => {
       const button = stakeEls[i];
@@ -160,6 +178,10 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
     const start = actions.start(territoryId, shareIndex);
     if (!start) { starting = false; renderSetup(); return; }
     target = start.target;
+    genre = genreById(data, start.chart.genre);
+    setInstruments(genre.instruments);
+    $('battle-title').textContent = `${genre.name} · ${start.chart.bpm} BPM`;
+    $('battle-track').style.setProperty('--beat', `${Math.round(start.chart.spb * 1000)}ms`);
     $('battle-rival-name').textContent = start.rival;
     $('battle-target').textContent = pct(target);
     $('battle-accuracy').textContent = '—';
@@ -185,17 +207,18 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
     frameId = requestAnimationFrame(frame);
   };
 
-  /** Le métronome de la partie, programmé d'avance sur l'horloge audio. */
+  /** Le métronome du genre, programmé d'avance sur l'horloge audio (swing compris). */
   function scheduleDrums(chart) {
     const { spb } = chart;
     const lead = data.battle.leadInBeats;
-    const total = lead + data.battle.beats;
+    const bars = data.battle.beats / 4;
     for (let b = 0; b < lead; b += 1) audio.playAt('battleCount', startedAt + b * spb, { volume: b === 0 ? 1 : 0.8 });
-    for (let b = lead; b <= total; b += 1) { // jusqu'à l'accord de fin compris
-      const at = startedAt + b * spb;
-      const downbeat = (b - lead) % 4 === 0; // premier temps de la mesure
-      audio.playAt('battleHat', at, { volume: downbeat ? 0.8 : 0.55 });
-      if (b < total) audio.playAt('battleHat', at + spb / 2, { volume: 0.3 });
+    for (let bar = 0; bar <= bars; bar += 1) {
+      const barStart = startedAt + (lead + bar * 4) * spb;
+      for (const hit of genre.metronome) {
+        if (bar === bars && hit.at > 0) break; // la fin : seulement le premier temps
+        audio.playAt(hit.sound, barStart + swingAt(genre, hit.at) * spb, { volume: hit.volume });
+      }
     }
   }
 
@@ -205,14 +228,18 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
   const semitoneRate = (semitones) => 2 ** (semitones / 12);
 
   /** La mesure de la chanson au temps `t` de la partie (accord, section). */
-  const songNow = (t) => songAt(data, Math.round(t / secondsPerBeat * 2) / 2 - data.battle.leadInBeats);
+  const songNow = (t) => songAt(data, genre, Math.round(t / run.chart.spb * 4) / 4 - data.battle.leadInBeats);
 
   /** Le son de l'instrument du pad, dans la tonalité de la mesure en cours. */
   function playInstrument(lane, t) {
     const instrument = instruments[lane];
     if (!instrument) return;
     const { notes, root } = songNow(t);
-    if (instrument.tuned === 'chord') {
+    if (instrument.tuned === 'arpeggio') {
+      // Guitare highlife : les notes de l'accord égrenées vite, de la plus grave à la plus aiguë.
+      const now = audio.now();
+      notes.forEach((semitones, k) => audio.playAt(instrument.sound, now + k * 0.035, { rate: semitoneRate(semitones), volume: 0.45 }));
+    } else if (instrument.tuned === 'chord') {
       for (const semitones of notes) audio.play(instrument.sound, { rate: semitoneRate(semitones), volume: 0.4 });
     } else if (instrument.tuned === 'root') {
       audio.play(instrument.sound, { rate: semitoneRate(root) });
@@ -279,7 +306,7 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
         $('battle-judge').textContent = '';
       }
       if (beat >= 0) {
-        const song = songAt(data, beat - lead);
+        const song = songAt(data, genre, beat - lead);
         $('battle-song').textContent = `${song.sectionName} · ${song.chord}`;
       }
       $('battle-track').classList.toggle('is-beat', beat >= 0);

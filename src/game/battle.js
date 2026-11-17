@@ -1,7 +1,7 @@
-// Battle de beat : un mini-jeu de rythme d'environ 25 s (une petite chanson de 8 mesures) contre un rival de la carte.
+// Battle de beat : un mini-jeu de rythme de 15 à 25 s (une petite chanson de 8 mesures) contre un rival de la carte.
 //   - On choisit un territoire ouvert (ou en campagne) qui a un rival, et une mise :
 //     une part du cash (data/battle.json → stakes, jamais plus de 50 %).
-//   - Des notes tombent sur 3 pistes (caisse claire, piano, kick) au tempo du QG (86 BPM) : elles forment un vrai beat sur la grille d'accords de la chanson. Le joueur tape en rythme ;
+//   - Chaque battle tire un tempo de 88 à 130 BPM et le genre qui va avec (boom bap, afrobeats, house). Des notes tombent sur 3 pistes (caisse claire, piano, kick) : elles forment le beat du genre, sur sa grille d'accords. Le joueur tape en rythme ;
 //     chaque note est « parfaite », « bonne » ou ratée. Taper dans le vide coûte un peu.
 //   - Le rival a un score à battre (sa précision), plus dur pour les gros territoires.
 //     Score battu : la mise revient multipliée (× 1,5 au score du rival, jusqu'à × 3 pour
@@ -82,20 +82,44 @@ export function battleBlock(state, data, id, shareIndex = 0) {
   return '';
 }
 
-/** Durée d'un temps, en secondes. */
-export function secondsPerBeat(data) {
-  return 60 / data.battle.bpm;
+// ---- Le tempo et le genre -------------------------------------------------------
+// Chaque battle tire un tempo entre bpm.min et bpm.max (88 à 130), puis prend le genre dont
+// la plage contient ce tempo (data/battle.json → genres) : boom bap (88-97), afrobeats
+// (98-115) ou house (116-130). Le genre donne la chanson (accords), le beat à taper
+// (groove), le métronome et le swing.
+
+/** Un tempo entier au hasard dans la plage du jeu. */
+export function pickBpm(data, rng = Math.random) {
+  const { min, max } = data.battle.bpm;
+  return Math.min(max, min + Math.floor(rng() * (max - min + 1)));
+}
+
+/** Le genre qui correspond à un tempo (le plus proche si aucun ne le contient). */
+export function genreFor(data, bpm) {
+  const { genres } = data.battle;
+  return genres.find((g) => bpm >= g.bpm.min && bpm <= g.bpm.max)
+    ?? genres.reduce((best, g) => (Math.abs(bpm - (g.bpm.min + g.bpm.max) / 2) < Math.abs(bpm - (best.bpm.min + best.bpm.max) / 2) ? g : best));
+}
+
+export function genreById(data, id) {
+  return data.battle.genres.find((g) => g.id === id) ?? data.battle.genres[0];
+}
+
+/** Position réelle d'un contretemps : le « et » (0,5) est retardé par le swing du genre. */
+export function swingAt(genre, at) {
+  const frac = at - Math.floor(at);
+  return Math.abs(frac - 0.5) < 1e-9 ? Math.floor(at) + (genre.swing ?? 0.5) : at;
 }
 
 // ---- La chanson -----------------------------------------------------------------
-// Une battle est une petite chanson (data/battle.json → song) : un décompte d'une mesure,
-// puis des sections de 4 mesures (couplet, refrain), un accord par mesure, et une fin sur
-// l'accord de départ (cadence V7 → I). Les temps se comptent depuis la fin du décompte :
-// le temps 0 est le premier temps de la première mesure.
+// Une battle est une petite chanson (genre → song) : un décompte d'une mesure, puis des
+// sections de 4 mesures (couplet, refrain), un accord par mesure, et une fin sur l'accord
+// de départ (cadence). Les temps se comptent depuis la fin du décompte : le temps 0 est le
+// premier temps de la première mesure.
 
-/** Les mesures de la chanson, dans l'ordre : [{ section, chord }]. */
-export function songBars(data) {
-  return data.battle.song.sections.flatMap((section, i) => section.chords.map((chord) => ({ section: i, chord })));
+/** Les mesures de la chanson d'un genre, dans l'ordre : [{ section, chord }]. */
+export function songBars(genre) {
+  return genre.song.sections.flatMap((section, i) => section.chords.map((chord) => ({ section: i, chord })));
 }
 
 /**
@@ -103,13 +127,13 @@ export function songBars(data) {
  * { bar, section, sectionName, chord, root, notes, ending }.
  * Pendant le décompte : la première mesure ; après la dernière : l'accord de fin.
  */
-export function songAt(data, beat) {
-  const { song, chords } = data.battle;
-  const bars = songBars(data);
+export function songAt(data, genre, beat) {
+  const { song } = genre;
+  const bars = songBars(genre);
   const bar = Math.floor(beat / 4);
   const ending = bar >= bars.length;
   const current = ending ? { section: song.sections.length - 1, chord: song.ending } : bars[Math.max(0, bar)];
-  const def = chords[current.chord];
+  const def = data.battle.chords[current.chord];
   return {
     bar, ending, section: current.section, sectionName: ending ? 'Fin' : song.sections[current.section].name,
     chord: current.chord, root: def.root, notes: def.notes,
@@ -117,46 +141,52 @@ export function songAt(data, beat) {
 }
 
 /**
- * La partition : notes { t (secondes depuis le début), lane }, triées.
- * Elle joue un vrai beat (data/battle.json → groove) : sur chaque mesure, piano au 1er temps
- * (le changement d'accord), caisse claire sur 2 et 4, kick sur 3. Contre un rival plus fort,
- * le kick double le piano au 1er temps et des contretemps s'ajoutent (kick syncopé, piano
- * qui annonce l'accord suivant), plus souvent au refrain. La dernière note tombe sur l'accord
- * de fin, le temps juste après la dernière mesure.
+ * La partition : { notes: [{ t (secondes depuis le début), lane }], duration, spb, bpm, genre }.
+ * Elle joue le beat du genre (genre → groove) avec ses 4 instruments (genre → instruments) :
+ * un instrument par temps (`base`, sur 1 ou 2 mesures), un 2e
+ * possible sur certains temps (`doubles`) et des contretemps (`offbeats`, swingués en boom
+ * bap). Plus le rival est fort, plus il y a de doubles et de contretemps, et plus au refrain
+ * qu'au couplet. La dernière note tombe sur l'accord de fin, juste après la dernière mesure.
  */
-export function createChart(data, id, rng = Math.random) {
+export function createChart(data, id, rng = Math.random, bpm = pickBpm(data, rng)) {
   const config = data.battle;
+  const genre = genreFor(data, bpm);
   const level = rivalLevel(data, id);
   const { offbeat, doubles } = config.difficulty;
   const pOff = lerp(offbeat.easiest, offbeat.hardest, level);
   const pDouble = lerp(doubles.easiest, doubles.hardest, level);
-  const spb = secondsPerBeat(data);
-  const laneOf = (instrument) => config.instruments.findIndex((i) => i.id === instrument);
-  const { base, doubles: doubleHits, offbeats } = config.groove;
-  const sections = config.song.sections;
+  const spb = 60 / bpm;
+  const laneOf = (instrument) => genre.instruments.findIndex((i) => i.id === instrument);
+  const { base, doubles: doubleHits, offbeats } = genre.groove;
+  const sections = genre.song.sections;
+  const bars = songBars(genre);
   const notes = [];
   const at = (beat) => (config.leadInBeats + beat) * spb;
-  const downbeat = (beat) => {
-    notes.push({ t: at(beat), lane: laneOf(base[0]) });
-    for (const d of doubleHits) if (d.beat === 1 && rng() < pDouble) notes.push({ t: at(beat), lane: laneOf(d.lane) });
+  // Le beat de base peut durer 1 ou 2 mesures (4 ou 8 temps) : il tourne en boucle.
+  const onBeat = (beat, i) => {
+    const lane = laneOf(base[beat % base.length]);
+    notes.push({ t: at(beat), lane });
+    for (const d of doubleHits) {
+      if (d.beat === i + 1 && laneOf(d.lane) !== lane && rng() < pDouble) notes.push({ t: at(beat), lane: laneOf(d.lane) });
+    }
   };
-  songBars(data).forEach(({ section }, bar) => {
+  bars.forEach(({ section }, bar) => {
     const intensity = sections[section].intensity ?? 1;
-    const last = bar === config.beats / 4 - 1;
+    const last = bar === bars.length - 1;
     for (let i = 0; i < 4; i += 1) {
       const beat = bar * 4 + i;
-      if (i === 0) downbeat(beat);
-      else notes.push({ t: at(beat), lane: laneOf(base[i]) });
-      if (i > 0) for (const d of doubleHits) if (d.beat === i + 1 && rng() < pDouble) notes.push({ t: at(beat), lane: laneOf(d.lane) });
-      // Contretemps (le « et » après le temps) ; pas après le 4e temps de la dernière mesure.
-      const off = offbeats.find((o) => o.beat === i + 1);
-      if (off && !(last && i === 3) && rng() < pOff * intensity) notes.push({ t: at(beat) + spb / 2, lane: laneOf(off.lane) });
+      onBeat(beat, i);
+      // Contretemps après ce temps ; pas après le 4e temps de la dernière mesure (la fin tombe sur le temps).
+      for (const off of offbeats) {
+        if (off.beat !== i + 1 || (last && i === 3)) continue;
+        if (rng() < pOff * intensity) notes.push({ t: at(beat + swingAt(genre, off.at)), lane: laneOf(off.lane) });
+      }
     }
   });
-  downbeat(config.beats); // l'accord de fin
+  onBeat(bars.length * 4, 0); // l'accord de fin
   notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
-  const duration = (config.leadInBeats + config.beats + 2) * spb;
-  return { notes, duration, spb };
+  const duration = (config.leadInBeats + bars.length * 4 + 2) * spb;
+  return { notes, duration, spb, bpm, genre: genre.id };
 }
 
 // ---- Le run : la partie en train de se jouer (pas sauvegardée) ----------------
@@ -241,7 +271,8 @@ export function startBattle(state, data, id, shareIndex = 0, rng = Math.random) 
   state.battles.pending = { territory: id, stake, target };
   state.battles.last[id] = state.time;
   const chart = createChart(data, id, rng);
-  return [{ type: 'battleStart', id, name: t.name, rival: t.rival, stake, target, chart }];
+  const genre = genreById(data, chart.genre);
+  return [{ type: 'battleStart', id, name: t.name, rival: t.rival, stake, target, chart, bpm: chart.bpm, genre: genre.name }];
 }
 
 /**

@@ -23,13 +23,13 @@
 
 /* ---- La partie ---- */
 .battle-hud {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: baseline; gap: 6px;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: baseline; gap: 6px;
   font: .7rem var(--font-label);
 }
 .battle-hud > :first-child, .battle-hud > :last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .battle-hud > :last-child { text-align: right; }
 .battle-hud strong { font-size: 1rem; }
-.battle-mid { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.battle-songline { display: flex; justify-content: space-between; gap: 8px; min-height: 1.2em; margin-top: 4px; font: .7rem var(--font-label); }
 .battle-song { font-weight: 700; white-space: nowrap; }
 .battle-combo { color: #b23a3a; font-weight: 700; }
 
@@ -54,6 +54,7 @@
 }
 .battle-lane:nth-child(2) .battle-note { background: var(--lamp); }
 .battle-lane:nth-child(3) .battle-note { background: var(--weed); }
+.battle-lane:nth-child(4) .battle-note { background: var(--sunset); }
 .battle-judge {
   position: absolute; left: 0; right: 0; top: 38%; margin: 0; text-align: center; pointer-events: none;
   font: 700 1.6rem var(--font-label); color: var(--paper-2); text-shadow: 3px 3px 0 var(--ink);
@@ -65,10 +66,10 @@
 .battle-judge.is-pop { animation: battle-pop .25s steps(3, end); }
 @keyframes battle-pop { from { transform: scale(1.4); } }
 
-.battle-pads { display: grid; grid-template-columns: repeat(var(--lanes, 3), 1fr); gap: 8px; margin-top: 10px; }
+.battle-pads { display: grid; grid-template-columns: repeat(var(--lanes, 4), minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
 .battle-pad {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  height: 72px; padding: 0; cursor: pointer; color: var(--ink); touch-action: none;
+  height: 78px; padding: 0; cursor: pointer; color: var(--ink); touch-action: none;
   background: var(--paper-2); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
 }
 .battle-pad:active, .battle-pad.is-hit { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
@@ -77,7 +78,7 @@
 .battle-pad.is-hit[data-result="good"] { background: var(--weed); }
 .battle-pad.is-hit[data-result="miss"], .battle-pad.is-hit[data-result="stray"] { background: #ffb3b3; }
 .battle-pad-icon { display: grid; place-items: center; height: 36px; font-size: 1.8rem; line-height: 1; }
-.battle-pad-name { font: 700 .6rem var(--font-label); text-transform: uppercase; }
+.battle-pad-name { max-width: 100%; padding: 0 2px; font: 700 .5rem/1.1 var(--font-label); text-align: center; text-transform: uppercase; overflow-wrap: anywhere; }
 @keyframes battle-pad { to { transform: none; box-shadow: 4px 4px 0 var(--ink); } }
 
 .battle-result .btn-ok { justify-content: center; background: var(--sunset); color: var(--ink); }

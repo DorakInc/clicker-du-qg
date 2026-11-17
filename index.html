@@ -357,7 +357,7 @@
             <span class="event-icon" aria-hidden="true">⚔️</span>
             <p id="battle-intro" class="event-text"></p>
           </div>
-          <p class="hint">Tape chaque note quand elle touche la ligne. Au clavier : ← ↓ → ou A S D.</p>
+          <p class="hint">Tape chaque note quand elle touche la ligne. Au clavier : A S D F (ou ← ↓ ↑ →).</p>
           <p class="battle-label">Ta mise</p>
           <div id="battle-stakes" class="battle-stakes" role="radiogroup" aria-label="Ta mise"></div>
           <p id="battle-odds" class="hint"></p>
@@ -367,8 +367,11 @@
         <div id="battle-play" class="battle-play" hidden>
           <div class="battle-hud">
             <span>Toi <strong id="battle-accuracy">—</strong></span>
-            <span class="battle-mid"><span id="battle-song" class="battle-song"></span><span id="battle-combo" class="battle-combo"></span></span>
             <span><span id="battle-rival-name"></span> <strong id="battle-target"></strong></span>
+          </div>
+          <div class="battle-songline">
+            <span id="battle-song" class="battle-song"></span>
+            <span id="battle-combo" class="battle-combo"></span>
           </div>
           <div id="battle-track" class="battle-track">
             <div id="battle-lanes" class="battle-lanes"></div>
