@@ -19,6 +19,10 @@
         { "at": 3, "sound": "battleHat", "volume": 0.55 },
         { "at": 3.5, "sound": "battleHat", "volume": 0.3 }
       ],
+      "backing": [
+        { "sound": "battleVinyl", "at": 0, "beats": 4, "volume": 0.5 },
+        { "sound": "battleStrings", "tuned": "chord", "at": 0, "beats": 4, "volume": 0.35 }
+      ],
       "song": {
         "sections": [
           { "name": "Couplet", "chords": ["Cmaj7", "Am7", "Dm7", "G7"], "intensity": 0.6 },
@@ -72,6 +76,15 @@
         { "at": 3.5, "sound": "battleShaker", "volume": 0.4 },
         { "at": 3.75, "sound": "battleShaker", "volume": 0.15 }
       ],
+      "backing": [
+        { "sound": "battleOrgan", "tuned": "chord", "at": 0, "beats": 4, "volume": 0.22 },
+        { "sound": "battleBassGuitar", "tuned": "root", "at": 0, "beats": 0.75, "volume": 0.6 },
+        { "sound": "battleBassGuitar", "tuned": "root", "at": 0.75, "beats": 0.75, "volume": 0.45 },
+        { "sound": "battleBassGuitar", "tuned": "root", "at": 1.5, "beats": 0.5, "volume": 0.5 },
+        { "sound": "battleBassGuitar", "tuned": "root", "at": 2, "beats": 0.75, "volume": 0.55 },
+        { "sound": "battleBassGuitar", "tuned": "root", "at": 2.75, "beats": 0.75, "volume": 0.45 },
+        { "sound": "battleBassGuitar", "tuned": "root", "at": 3.5, "beats": 0.5, "volume": 0.5 }
+      ],
       "song": {
         "sections": [
           { "name": "Couplet", "chords": ["Cmaj7", "G", "Am7", "Fmaj7"], "intensity": 0.6 },
@@ -115,6 +128,9 @@
         { "at": 2.5, "sound": "battleOpenHat", "volume": 0.35 },
         { "at": 3, "sound": "battleHat", "volume": 0.45 },
         { "at": 3.5, "sound": "battleOpenHat", "volume": 0.35 }
+      ],
+      "backing": [
+        { "sound": "battlePad", "tuned": "chord", "at": 0, "beats": 4, "volume": 0.3 }
       ],
       "song": {
         "sections": [

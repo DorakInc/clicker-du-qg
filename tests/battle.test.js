@@ -164,6 +164,18 @@ test('les genres : chanson en phrases de 4 mesures, un accord par mesure, fin su
       assert.ok(lanes.includes(l), `${where}.groove : instrument « ${l} » inconnu`);
     }
     for (const o of g.groove.offbeats) assert.ok(o.at > 0 && o.at < 1, `${where}.groove.offbeats : at entre 0 et 1`);
+    // La base d'accompagnement : des sons qui existent, dans la mesure, et jamais un pad ni le métronome
+    // (sinon elle se mélange avec ce que le joueur tape).
+    assert.ok(g.backing?.length > 0, `${where} : il faut une base d'accompagnement (backing)`);
+    const padSounds = new Set(g.instruments.map((i) => i.sound));
+    const metronomeSounds = new Set(g.metronome.map((h) => h.sound));
+    for (const h of g.backing) {
+      assert.ok((data.sounds.effects[h.sound] ?? []).length > 0, `${where}.backing : son « ${h.sound} » vide ou absent`);
+      assert.ok(!padSounds.has(h.sound) && !metronomeSounds.has(h.sound), `${where}.backing : « ${h.sound} » double un pad ou le métronome`);
+      assert.ok(h.at >= 0 && h.at < 4 && h.beats > 0 && h.at + h.beats <= 4, `${where}.backing : at et beats doivent rester dans la mesure`);
+      assert.ok(h.volume > 0 && h.volume <= 1, `${where}.backing : volume`);
+      assert.ok([undefined, 'chord', 'root'].includes(h.tuned), `${where}.backing.tuned : "chord", "root" ou rien`);
+    }
     // Le métronome : une mesure, au moins un coup sur chaque temps, des sons qui existent.
     for (let beat = 0; beat < 4; beat += 1) assert.ok(g.metronome.some((h) => h.at === beat), `${where}.metronome : rien sur le temps ${beat + 1}`);
     for (const h of g.metronome) {

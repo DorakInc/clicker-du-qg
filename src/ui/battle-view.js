@@ -10,7 +10,8 @@
 // ou house (data/battle.json → genres ; src/game/battle.js choisit).
 // Son et image calés : le métronome du genre est programmé d'avance sur l'horloge audio
 // (décompte 1-2-3-4 aux baguettes, puis charleston swingué en boom bap, shaker 3-3-2 en
-// afrobeats, charleston fermé et ouvert en house), et l'image lit la même horloge. Une note touche
+// afrobeats, charleston fermé et ouvert en house) avec la base d'accompagnement du genre
+// (vinyle et cordes, orgue et basse, nappe synthé), et l'image lit la même horloge. Une note touche
 // la ligne exactement quand le temps sonne. Pas de batterie de fond : c'est le joueur qui
 // joue le beat avec les 4 pads, les instruments du genre (data/battle.json → genres → instruments). Tout suit la grille
 // d'accords de la chanson (song, chords ; demi-tons autour du do des fichiers son) : le
@@ -218,6 +219,29 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
       for (const hit of genre.metronome) {
         if (bar === bars && hit.at > 0) break; // la fin : seulement le premier temps
         audio.playAt(hit.sound, barStart + swingAt(genre, hit.at) * spb, { volume: hit.volume });
+      }
+      scheduleBacking(bar, barStart, spb, bar === bars);
+    }
+  }
+
+  /**
+   * La base d'accompagnement du genre (genre → backing), sur l'accord de chaque mesure :
+   * nappes et orgue tenus (tuned: "chord"), basse sur la fondamentale (tuned: "root"),
+   * texture sans hauteur (vinyle). Elle ne double jamais un pad ni le métronome.
+   * Sur l'accord de fin, seuls les sons du premier temps jouent, tenus deux temps.
+   */
+  function scheduleBacking(bar, barStart, spb, ending) {
+    const song = songAt(data, genre, bar * 4);
+    for (const hit of genre.backing ?? []) {
+      if (ending && hit.at > 0) continue;
+      const when = barStart + swingAt(genre, hit.at) * spb;
+      const duration = (ending ? 2 : hit.beats) * spb;
+      if (hit.tuned === 'chord') {
+        const volume = hit.volume / Math.sqrt(song.notes.length); // un accord n'est pas plus fort qu'une note
+        for (const semitones of song.notes) audio.playAt(hit.sound, when, { rate: semitoneRate(semitones), volume, duration });
+      } else {
+        const rate = hit.tuned === 'root' ? semitoneRate(song.root) : 1;
+        audio.playAt(hit.sound, when, { rate, volume: hit.volume, duration });
       }
     }
   }

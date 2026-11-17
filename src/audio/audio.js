@@ -11,6 +11,7 @@
 //   audio.latency()                      délai entre l'horloge et le haut-parleur, en secondes
 //   audio.play(type, { rate, volume })   joue tout de suite (rate : 2 = une octave plus haut)
 //   audio.playAt(type, quand, options)   joue à l'instant `quand` de audio.now() ; renvoie de quoi l'arrêter
+//                                        (options.duration : coupe le son, en fondu, après tant de secondes)
 //   await audio.ready()                  attend que le son soit débloqué et les fichiers prêts
 // La musique d'ambiance reste un simple <audio> en boucle.
 
@@ -54,7 +55,7 @@ export function createAudio(sounds, { enabled = true } = {}) {
     return buffers.get(variants[i]);
   }
 
-  function playAt(eventType, when, { rate = 1, volume = 1 } = {}) {
+  function playAt(eventType, when, { rate = 1, volume = 1, duration = 0 } = {}) {
     if (!ctx || !enabled || !unlocked) return null;
     const buffer = pickBuffer(eventType);
     if (!buffer) return null;
@@ -62,14 +63,22 @@ export function createAudio(sounds, { enabled = true } = {}) {
     source.buffer = buffer;
     source.playbackRate.value = rate;
     let node = source;
-    if (volume !== 1) {
+    const start = Math.max(when, ctx.currentTime);
+    if (volume !== 1 || duration > 0) {
       const gain = ctx.createGain();
       gain.gain.value = volume;
+      if (duration > 0) {
+        // Fondu de sortie (60 ms au plus) pour couper un son tenu sans clic.
+        const fade = Math.min(0.06, duration / 2);
+        gain.gain.setValueAtTime(volume, start + duration - fade);
+        gain.gain.linearRampToValueAtTime(0, start + duration);
+      }
       source.connect(gain);
       node = gain;
     }
     node.connect(master);
-    source.start(Math.max(when, ctx.currentTime));
+    source.start(start);
+    if (duration > 0) source.stop(start + duration + 0.01); // après start() : l'inverse est refusé
     return { stop: () => { try { source.stop(); } catch { /* déjà fini */ } } };
   }
 
