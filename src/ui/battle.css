@@ -72,14 +72,12 @@
   height: 78px; padding: 0; cursor: pointer; color: var(--ink); touch-action: none;
   background: var(--paper-2); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
 }
-.battle-pad:active, .battle-pad.is-hit { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+/* Le pad garde toujours la même couleur : il s'enfonce seulement quand on le tape. */
+.battle-pad:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
 .battle-pad.is-hit { animation: battle-pad .15s steps(2, end); }
-.battle-pad.is-hit[data-result="perfect"] { background: var(--lamp); }
-.battle-pad.is-hit[data-result="good"] { background: var(--weed); }
-.battle-pad.is-hit[data-result="miss"], .battle-pad.is-hit[data-result="stray"] { background: #ffb3b3; }
 .battle-pad-icon { display: grid; place-items: center; height: 36px; font-size: 1.8rem; line-height: 1; }
 .battle-pad-name { max-width: 100%; padding: 0 2px; font: 700 .5rem/1.1 var(--font-label); text-align: center; text-transform: uppercase; overflow-wrap: anywhere; }
-@keyframes battle-pad { to { transform: none; box-shadow: 4px 4px 0 var(--ink); } }
+@keyframes battle-pad { from { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); } }
 
 .battle-result .btn-ok { justify-content: center; background: var(--sunset); color: var(--ink); }
 
