@@ -28,7 +28,12 @@
     "eventEnd": [],
     "adoptPet": [],
     "treatPet": [],
-    "petPet": []
+    "petPet": [],
+    "battleStart": [],
+    "battleNote": [],
+    "battleMiss": [],
+    "battleWin": [],
+    "battleLose": []
   },
   "music": {
     "normal": null,

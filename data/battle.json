@@ -1,0 +1,18 @@
+{
+  "bpm": 86,
+  "beats": 24,
+  "leadInBeats": 4,
+  "lanes": 3,
+  "windows": { "perfect": 0.08, "good": 0.16 },
+  "points": { "perfect": 1, "good": 0.6 },
+  "stakes": [0.1, 0.25, 0.5],
+  "minStake": 100,
+  "cooldownSeconds": 120,
+  "payout": { "atTarget": 1.5, "perfect": 3 },
+  "hypeShare": 0.1,
+  "difficulty": {
+    "target": { "easiest": 0.5, "hardest": 0.85 },
+    "offbeat": { "easiest": 0.1, "hardest": 0.6 },
+    "doubles": { "easiest": 0, "hardest": 0.25 }
+  }
+}

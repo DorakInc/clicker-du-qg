@@ -23,6 +23,7 @@ Tout le contenu du jeu vit ici, séparé du code. Les volets B (visuel) et C (so
 | `events.json` | Événements à la BitLife (police, impôts, beat viral…) : fréquence, conditions, effets, choix et leurs chances. Les textes sont à réécrire par le volet C. Essai direct : `?evenement=<id>` | A (règles), C (textes) |
 | `creation.json` | « Créer mon perso » au début d'une partie : points de talent, talents, signes particuliers, noms au hasard, palettes de couleurs. Voir « Création de perso » plus bas | A (chiffres), C (noms, textes) |
 | `decor.json` | Éditeur de studio (le QG en vue isométrique) : taille de la pièce (`room`) et objets plaçables (`items`). Voir « Objets du studio » plus bas | A (règles), B (sprites, couleurs), C (noms des objets déco) |
+| `battle.json` | Battle de beat contre les rivaux de la carte : tempo, nombre de temps, pistes, fenêtres de frappe, mises proposées, gains, hype gagnée, difficulté selon le rival. Voir « Battle de beat » plus bas | A |
 
 ## Identifiants (`id`)
 
@@ -231,3 +232,21 @@ Un événement tombe toutes les `minGapSeconds` à `maxGapSeconds` secondes de j
 - `requires` : `minTier`, `minMoney`, `minIncome` ($/s), `minBps`, `stash` (zen ou grammes à saisir), `greenhouse`, `map`, `campaign`.
 - Soit `effects` (appliqués tout de suite), soit `choices` : chaque choix a un `label` et des `outcomes` dont les `chance` font 1.
 - Effets : `money` (`multiply`, ou `incomeSeconds` : ± N secondes de revenu), `fans` (`multiply`), `grams` (`multiply`, `add`), `stash` (`share` : part saisie du zen et des grammes), `hype` (`multiply`, campagne en cours), `buff` (`stat`, `multiply`, `seconds` : effet temporaire).
+
+## Battle de beat (`battle.json`)
+
+Sur la carte, la fiche d'un territoire **ouvert** (ou en campagne) qui a un `rival` propose « ⚔️ Battle contre … » : un mini-jeu de rythme d'environ 20 s (logique dans `src/game/battle.js`, écran dans `src/ui/battle-view.js`).
+
+| Champ | Sens |
+|---|---|
+| `bpm`, `beats`, `leadInBeats` | Tempo (86, celui du QG), nombre de temps joués, temps de décompte avant la première note. |
+| `lanes` | Nombre de pistes (3 : ← ↓ → ou A S D au clavier). |
+| `windows` | Écart permis, en secondes, pour une frappe `perfect` et `good` (au-delà : ratée). |
+| `points` | Ce que vaut une note `perfect` (1) et `good`. Une frappe dans le vide compte comme une demi-note ratée. |
+| `stakes` | Les mises proposées, en part du cash (jamais plus de 0,5). `minStake` : mise minimale en $. |
+| `cooldownSeconds` | Attente avant une revanche contre le même rival (temps de jeu). |
+| `payout` | Ce que rapporte la mise si on bat le rival : `atTarget` pile au score du rival, jusqu'à `perfect` pour un sans-faute. Sinon, la mise est perdue. |
+| `hypeShare` | Hype gagnée par le territoire après une victoire, en part de sa barre (peut finir la conquête). |
+| `difficulty` | Du rival le plus faible (`easiest`) au plus fort (`hardest`), classés par `defense` dans `map.json` : `target` = précision à battre, `offbeat` = chance d'une note en contretemps, `doubles` = chance de deux notes en même temps. |
+
+Pas de battle pendant un fail out, ni quand un événement attend une réponse ; pas de nouvel événement pendant une battle. Une battle laissée en plan (jeu fermé) compte comme perdue. Les sons `battleStart`, `battleNote`, `battleMiss`, `battleWin`, `battleLose` sont dans `sounds.json`, les messages `battleWin`, `battleLose`, `battleForfeit` dans `texts.json`.
