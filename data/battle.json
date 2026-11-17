@@ -9,6 +9,12 @@
       "name": "Boom bap",
       "bpm": { "min": 88, "max": 97 },
       "swing": 0.58,
+      "instruments": [
+        { "id": "scratch", "name": "Scratch", "sound": "battleScratch" },
+        { "id": "caisse-claire", "name": "Caisse claire", "sound": "battleSnare" },
+        { "id": "rhodes", "name": "Rhodes", "sound": "battleRhodes", "tuned": "chord" },
+        { "id": "kick", "name": "Kick", "sound": "battleKick" }
+      ],
       "metronome": [
         { "at": 0, "sound": "battleHat", "volume": 0.8 },
         { "at": 0.5, "sound": "battleHat", "volume": 0.3 },
@@ -21,43 +27,56 @@
       ],
       "backing": [
         { "sound": "battleVinyl", "at": 0, "beats": 4, "volume": 0.5 },
-        { "sound": "battleStrings", "tuned": "chord", "at": 0, "beats": 4, "volume": 0.35 }
+        { "sound": "battleStrings", "tuned": "chord", "at": 0, "beats": 4, "volume": 0.3 },
+        { "sound": "battleUprightBass", "tuned": "note", "note": 0, "at": 0, "beats": 1.5, "volume": 0.55 },
+        { "sound": "battleUprightBass", "tuned": "note", "note": 2, "at": 2, "beats": 1, "volume": 0.5 },
+        { "sound": "battleUprightBass", "tuned": "note", "note": 1, "at": 3, "beats": 1, "volume": 0.45 }
       ],
-      "song": {
-        "sections": [
-          { "name": "Couplet", "chords": ["Cmaj7", "Am7", "Dm7", "G7"], "intensity": 0.6 },
-          { "name": "Refrain", "chords": ["Fmaj7", "Em7", "Dm7", "G7"], "intensity": 1 }
-        ],
-        "ending": "Cmaj7"
-      },
+      "songs": [
+        {
+          "name": "Sous-sol",
+          "sections": [
+            { "name": "Couplet", "chords": ["Cmaj7", "Am7", "Dm7", "G7"], "intensity": 0.6 },
+            { "name": "Refrain", "chords": ["Fmaj7", "Em7", "Dm7", "G7"], "intensity": 1 }
+          ],
+          "ending": "Cmaj7"
+        },
+        {
+          "name": "Nuit blanche",
+          "sections": [
+            { "name": "Couplet", "chords": ["Am7", "Fmaj7", "Dm7", "E7"], "intensity": 0.6 },
+            { "name": "Refrain", "chords": ["Dm7", "G7", "Cmaj7", "E7"], "intensity": 1 }
+          ],
+          "ending": "Am7"
+        }
+      ],
       "groove": {
         "base": [
           "rhodes", "caisse-claire", "kick", "caisse-claire",
-          "rhodes", "caisse-claire", "contrebasse", "caisse-claire"
+          "scratch", "caisse-claire", "kick", "caisse-claire"
         ],
         "doubles": [
-          { "beat": 1, "lane": "kick" },
-          { "beat": 1, "lane": "contrebasse" }
+          { "beat": 1, "lane": "kick" }
         ],
         "offbeats": [
-          { "beat": 1, "at": 0.5, "lane": "contrebasse" },
+          { "beat": 1, "at": 0.5, "lane": "scratch" },
           { "beat": 2, "at": 0.5, "lane": "kick" },
           { "beat": 3, "at": 0.5, "lane": "kick" },
           { "beat": 4, "at": 0.5, "lane": "rhodes" }
         ]
-      },
-      "instruments": [
-        { "id": "kick", "name": "Kick", "sound": "battleKick", "tuned": "root" },
-        { "id": "caisse-claire", "name": "Caisse claire", "sound": "battleSnare" },
-        { "id": "rhodes", "name": "Rhodes", "sound": "battleRhodes", "tuned": "chord" },
-        { "id": "contrebasse", "name": "Contrebasse", "sound": "battleUprightBass", "tuned": "root" }
-      ]
+      }
     },
     {
       "id": "afrobeats",
       "name": "Afrobeats",
       "bpm": { "min": 98, "max": 115 },
       "swing": 0.5,
+      "instruments": [
+        { "id": "kick", "name": "Kick", "sound": "battleKick" },
+        { "id": "rimshot", "name": "Rimshot", "sound": "battleRimshot" },
+        { "id": "guitare", "name": "Guitare", "sound": "battleGuitar", "tuned": "arpeggio" },
+        { "id": "conga", "name": "Conga", "sound": "battleConga" }
+      ],
       "metronome": [
         { "at": 0, "sound": "battleShaker", "volume": 0.8 },
         { "at": 0.25, "sound": "battleShaker", "volume": 0.15 },
@@ -77,26 +96,34 @@
         { "at": 3.75, "sound": "battleShaker", "volume": 0.15 }
       ],
       "backing": [
-        { "sound": "battleOrgan", "tuned": "chord", "at": 0, "beats": 4, "volume": 0.22 },
-        { "sound": "battleBassGuitar", "tuned": "root", "at": 0, "beats": 0.75, "volume": 0.6 },
-        { "sound": "battleBassGuitar", "tuned": "root", "at": 0.75, "beats": 0.75, "volume": 0.45 },
-        { "sound": "battleBassGuitar", "tuned": "root", "at": 1.5, "beats": 0.5, "volume": 0.5 },
-        { "sound": "battleBassGuitar", "tuned": "root", "at": 2, "beats": 0.75, "volume": 0.55 },
-        { "sound": "battleBassGuitar", "tuned": "root", "at": 2.75, "beats": 0.75, "volume": 0.45 },
-        { "sound": "battleBassGuitar", "tuned": "root", "at": 3.5, "beats": 0.5, "volume": 0.5 }
+        { "sound": "battleOrgan", "tuned": "chord", "at": 0, "beats": 4, "volume": 0.2 },
+        { "sound": "battleBassGuitar", "tuned": "note", "note": 0, "at": 0, "beats": 0.75, "volume": 0.55 },
+        { "sound": "battleBassGuitar", "tuned": "note", "note": 0, "at": 0.75, "beats": 0.75, "volume": 0.4 },
+        { "sound": "battleBassGuitar", "tuned": "note", "note": 2, "at": 1.5, "beats": 0.5, "volume": 0.45 },
+        { "sound": "battleBassGuitar", "tuned": "note", "note": 0, "at": 2, "beats": 0.75, "volume": 0.5 },
+        { "sound": "battleBassGuitar", "tuned": "note", "note": 1, "at": 2.75, "beats": 0.75, "volume": 0.4 },
+        { "sound": "battleBassGuitar", "tuned": "note", "note": 2, "at": 3.5, "beats": 0.5, "volume": 0.45 }
       ],
-      "song": {
-        "sections": [
-          { "name": "Couplet", "chords": ["Cmaj7", "G", "Am7", "Fmaj7"], "intensity": 0.6 },
-          { "name": "Refrain", "chords": ["Fmaj7", "G", "Am7", "G"], "intensity": 1 }
-        ],
-        "ending": "Cmaj7"
-      },
+      "songs": [
+        {
+          "name": "Soleil",
+          "sections": [
+            { "name": "Couplet", "chords": ["Cmaj7", "G", "Am7", "Fmaj7"], "intensity": 0.6 },
+            { "name": "Refrain", "chords": ["Fmaj7", "G", "Am7", "G"], "intensity": 1 }
+          ],
+          "ending": "Cmaj7"
+        },
+        {
+          "name": "Lagos la nuit",
+          "sections": [
+            { "name": "Couplet", "chords": ["Am7", "Fmaj7", "Cmaj7", "G"], "intensity": 0.6 },
+            { "name": "Refrain", "chords": ["Fmaj7", "G", "Em7", "G"], "intensity": 1 }
+          ],
+          "ending": "Am7"
+        }
+      ],
       "groove": {
-        "base": [
-          "kick", "rimshot", "guitare", "rimshot",
-          "kick", "rimshot", "conga", "rimshot"
-        ],
+        "base": ["kick", "rimshot", "guitare", "rimshot", "kick", "rimshot", "conga", "rimshot"],
         "doubles": [
           { "beat": 1, "lane": "guitare" }
         ],
@@ -106,19 +133,19 @@
           { "beat": 3, "at": 0.75, "lane": "guitare" },
           { "beat": 4, "at": 0.5, "lane": "conga" }
         ]
-      },
-      "instruments": [
-        { "id": "kick", "name": "Kick", "sound": "battleKick", "tuned": "root" },
-        { "id": "rimshot", "name": "Rimshot", "sound": "battleRimshot" },
-        { "id": "guitare", "name": "Guitare", "sound": "battleGuitar", "tuned": "arpeggio" },
-        { "id": "conga", "name": "Conga", "sound": "battleConga" }
-      ]
+      }
     },
     {
       "id": "house",
       "name": "House",
       "bpm": { "min": 116, "max": 130 },
       "swing": 0.5,
+      "instruments": [
+        { "id": "cowbell", "name": "Cowbell", "sound": "battleCowbell" },
+        { "id": "clap", "name": "Clap", "sound": "battleClap" },
+        { "id": "piano", "name": "Piano", "sound": "battlePiano", "tuned": "chord" },
+        { "id": "kick", "name": "Kick", "sound": "battleKick" }
+      ],
       "metronome": [
         { "at": 0, "sound": "battleHat", "volume": 0.7 },
         { "at": 0.5, "sound": "battleOpenHat", "volume": 0.35 },
@@ -130,20 +157,32 @@
         { "at": 3.5, "sound": "battleOpenHat", "volume": 0.35 }
       ],
       "backing": [
-        { "sound": "battlePad", "tuned": "chord", "at": 0, "beats": 4, "volume": 0.3 }
+        { "sound": "battlePad", "tuned": "chord", "at": 0, "beats": 4, "volume": 0.25 },
+        { "sound": "battleSynthBass", "tuned": "note", "note": 0, "at": 0.5, "beats": 0.5, "volume": 0.5 },
+        { "sound": "battleSynthBass", "tuned": "note", "note": 0, "at": 1.5, "beats": 0.5, "volume": 0.5 },
+        { "sound": "battleSynthBass", "tuned": "note", "note": 0, "at": 2.5, "beats": 0.5, "volume": 0.5 },
+        { "sound": "battleSynthBass", "tuned": "note", "note": 2, "at": 3.5, "beats": 0.5, "volume": 0.5 }
       ],
-      "song": {
-        "sections": [
-          { "name": "Couplet", "chords": ["Am7", "Dm7", "Am7", "Dm7"], "intensity": 0.6 },
-          { "name": "Refrain", "chords": ["Fmaj7", "Em7", "Fmaj7", "Em7"], "intensity": 1 }
-        ],
-        "ending": "Am7"
-      },
+      "songs": [
+        {
+          "name": "Montréal 5 h",
+          "sections": [
+            { "name": "Couplet", "chords": ["Am7", "Dm7", "Am7", "Dm7"], "intensity": 0.6 },
+            { "name": "Refrain", "chords": ["Fmaj7", "Em7", "Fmaj7", "Em7"], "intensity": 1 }
+          ],
+          "ending": "Am7"
+        },
+        {
+          "name": "Après-club",
+          "sections": [
+            { "name": "Couplet", "chords": ["Cmaj7", "Am7", "Fmaj7", "G"], "intensity": 0.6 },
+            { "name": "Refrain", "chords": ["Dm7", "Em7", "Fmaj7", "G"], "intensity": 1 }
+          ],
+          "ending": "Cmaj7"
+        }
+      ],
       "groove": {
-        "base": [
-          "kick", "clap", "kick", "clap",
-          "piano", "clap", "basse", "clap"
-        ],
+        "base": ["kick", "clap", "kick", "clap", "piano", "clap", "cowbell", "clap"],
         "doubles": [
           { "beat": 1, "lane": "kick" },
           { "beat": 2, "lane": "kick" },
@@ -151,18 +190,12 @@
           { "beat": 4, "lane": "kick" }
         ],
         "offbeats": [
-          { "beat": 1, "at": 0.5, "lane": "basse" },
+          { "beat": 1, "at": 0.5, "lane": "cowbell" },
           { "beat": 2, "at": 0.5, "lane": "piano" },
-          { "beat": 3, "at": 0.5, "lane": "basse" },
+          { "beat": 3, "at": 0.5, "lane": "cowbell" },
           { "beat": 4, "at": 0.5, "lane": "piano" }
         ]
-      },
-      "instruments": [
-        { "id": "kick", "name": "Kick", "sound": "battleKick", "tuned": "root" },
-        { "id": "clap", "name": "Clap", "sound": "battleClap" },
-        { "id": "piano", "name": "Piano", "sound": "battlePiano", "tuned": "chord" },
-        { "id": "basse", "name": "Basse", "sound": "battleSynthBass", "tuned": "root" }
-      ]
+      }
     }
   ],
   "chords": {
@@ -172,7 +205,8 @@
     "G7": { "root": -5, "notes": [-5, -1, 2, 5] },
     "G": { "root": -5, "notes": [-5, -1, 2, 7] },
     "Fmaj7": { "root": -7, "notes": [-3, 0, 4, 5] },
-    "Em7": { "root": 4, "notes": [-5, -1, 2, 4] }
+    "Em7": { "root": 4, "notes": [-5, -1, 2, 4] },
+    "E7": { "root": 4, "notes": [-1, 2, 4, 8] }
   },
   "windows": { "perfect": 0.08, "good": 0.16 },
   "points": { "perfect": 1, "good": 0.6 },

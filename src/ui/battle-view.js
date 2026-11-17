@@ -11,7 +11,8 @@
 // Son et image calés : le métronome du genre est programmé d'avance sur l'horloge audio
 // (décompte 1-2-3-4 aux baguettes, puis charleston swingué en boom bap, shaker 3-3-2 en
 // afrobeats, charleston fermé et ouvert en house) avec la base d'accompagnement du genre
-// (vinyle et cordes, orgue et basse, nappe synthé), et l'image lit la même horloge. Une note touche
+// (vinyle, cordes et contrebasse ; orgue et basse électrique ; nappe et basse synthé) sur
+// la track tirée au hasard, et l'image lit la même horloge. Une note touche
 // la ligne exactement quand le temps sonne. Pas de batterie de fond : c'est le joueur qui
 // joue le beat avec les 4 pads, les instruments du genre (data/battle.json → genres → instruments). Tout suit la grille
 // d'accords de la chanson (song, chords ; demi-tons autour du do des fichiers son) : le
@@ -52,6 +53,7 @@ const pct = (x) => `${Math.round(x * 100)} %`;
 export function createBattleView(data, actions, { openSheet, closeSheet, audio }) {
   const lanes = data.battle.lanes;
   let genre = data.battle.genres[0]; // genre de la battle en cours
+  let song = genre.songs[0]; // la track tirée pour cette battle
   let instruments = genre.instruments; // les 4 instruments du genre, un par piste
   let territoryId = '';
   let shareIndex = 0;
@@ -180,8 +182,9 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
     if (!start) { starting = false; renderSetup(); return; }
     target = start.target;
     genre = genreById(data, start.chart.genre);
+    song = genre.songs[start.chart.song] ?? genre.songs[0];
     setInstruments(genre.instruments);
-    $('battle-title').textContent = `${genre.name} · ${start.chart.bpm} BPM`;
+    $('battle-title').textContent = `${genre.name} · ${start.chart.bpm} BPM · « ${song.name} »`;
     $('battle-track').style.setProperty('--beat', `${Math.round(start.chart.spb * 1000)}ms`);
     $('battle-rival-name').textContent = start.rival;
     $('battle-target').textContent = pct(target);
@@ -231,16 +234,20 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
    * Sur l'accord de fin, seuls les sons du premier temps jouent, tenus deux temps.
    */
   function scheduleBacking(bar, barStart, spb, ending) {
-    const song = songAt(data, genre, bar * 4);
+    const chord = songAt(data, song, bar * 4);
     for (const hit of genre.backing ?? []) {
       if (ending && hit.at > 0) continue;
       const when = barStart + swingAt(genre, hit.at) * spb;
       const duration = (ending ? 2 : hit.beats) * spb;
       if (hit.tuned === 'chord') {
-        const volume = hit.volume / Math.sqrt(song.notes.length); // un accord n'est pas plus fort qu'une note
-        for (const semitones of song.notes) audio.playAt(hit.sound, when, { rate: semitoneRate(semitones), volume, duration });
+        const volume = hit.volume / Math.sqrt(chord.notes.length); // un accord n'est pas plus fort qu'une note
+        for (const semitones of chord.notes) audio.playAt(hit.sound, when, { rate: semitoneRate(semitones), volume, duration });
+      } else if (hit.tuned === 'note') {
+        // La ligne de basse : une note de l'accord (0 = fondamentale, 1 = tierce, 2 = quinte, 3 = septième).
+        const tone = chord.tones[(hit.note ?? 0) % chord.tones.length];
+        audio.playAt(hit.sound, when, { rate: semitoneRate(tone), volume: hit.volume, duration });
       } else {
-        const rate = hit.tuned === 'root' ? semitoneRate(song.root) : 1;
+        const rate = hit.tuned === 'root' ? semitoneRate(chord.root) : 1;
         audio.playAt(hit.sound, when, { rate, volume: hit.volume, duration });
       }
     }
@@ -252,7 +259,7 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
   const semitoneRate = (semitones) => 2 ** (semitones / 12);
 
   /** La mesure de la chanson au temps `t` de la partie (accord, section). */
-  const songNow = (t) => songAt(data, genre, Math.round(t / run.chart.spb * 4) / 4 - data.battle.leadInBeats);
+  const songNow = (t) => songAt(data, song, Math.round(t / run.chart.spb * 4) / 4 - data.battle.leadInBeats);
 
   /** Le son de l'instrument du pad, dans la tonalité de la mesure en cours. */
   function playInstrument(lane, t) {
@@ -330,8 +337,8 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
         $('battle-judge').textContent = '';
       }
       if (beat >= 0) {
-        const song = songAt(data, genre, beat - lead);
-        $('battle-song').textContent = `${song.sectionName} · ${song.chord}`;
+        const bar = songAt(data, song, beat - lead);
+        $('battle-song').textContent = `${bar.sectionName} · ${bar.chord}`;
       }
       $('battle-track').classList.toggle('is-beat', beat >= 0);
       $('battle-track').classList.toggle('is-downbeat', beat >= lead && (beat - lead) % 4 === 0);

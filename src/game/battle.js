@@ -112,14 +112,24 @@ export function swingAt(genre, at) {
 }
 
 // ---- La chanson -----------------------------------------------------------------
-// Une battle est une petite chanson (genre → song) : un décompte d'une mesure, puis des
+// Chaque genre a plusieurs tracks (genre → songs) ; la battle en tire une au hasard.
+// Une track est une petite chanson : un décompte d'une mesure, puis des
 // sections de 4 mesures (couplet, refrain), un accord par mesure, et une fin sur l'accord
 // de départ (cadence). Les temps se comptent depuis la fin du décompte : le temps 0 est le
 // premier temps de la première mesure.
 
-/** Les mesures de la chanson d'un genre, dans l'ordre : [{ section, chord }]. */
-export function songBars(genre) {
-  return genre.song.sections.flatMap((section, i) => section.chords.map((chord) => ({ section: i, chord })));
+/** Les mesures d'une track (genre → songs[i]), dans l'ordre : [{ section, chord }]. */
+export function songBars(song) {
+  return song.sections.flatMap((section, i) => section.chords.map((chord) => ({ section: i, chord })));
+}
+
+/**
+ * Les notes d'un accord rangées depuis la fondamentale, en demi-tons :
+ * [fondamentale, tierce, quinte, septième] (pour la ligne de basse : note 0, 1, 2, 3).
+ */
+export function chordTones(chord) {
+  const intervals = [...new Set(chord.notes.map((n) => (((n - chord.root) % 12) + 12) % 12))].sort((a, b) => a - b);
+  return intervals.map((i) => chord.root + i);
 }
 
 /**
@@ -127,16 +137,15 @@ export function songBars(genre) {
  * { bar, section, sectionName, chord, root, notes, ending }.
  * Pendant le décompte : la première mesure ; après la dernière : l'accord de fin.
  */
-export function songAt(data, genre, beat) {
-  const { song } = genre;
-  const bars = songBars(genre);
+export function songAt(data, song, beat) {
+  const bars = songBars(song);
   const bar = Math.floor(beat / 4);
   const ending = bar >= bars.length;
   const current = ending ? { section: song.sections.length - 1, chord: song.ending } : bars[Math.max(0, bar)];
   const def = data.battle.chords[current.chord];
   return {
     bar, ending, section: current.section, sectionName: ending ? 'Fin' : song.sections[current.section].name,
-    chord: current.chord, root: def.root, notes: def.notes,
+    chord: current.chord, root: def.root, notes: def.notes, tones: chordTones(def),
   };
 }
 
@@ -148,9 +157,12 @@ export function songAt(data, genre, beat) {
  * bap). Plus le rival est fort, plus il y a de doubles et de contretemps, et plus au refrain
  * qu'au couplet. La dernière note tombe sur l'accord de fin, juste après la dernière mesure.
  */
-export function createChart(data, id, rng = Math.random, bpm = pickBpm(data, rng)) {
+export function createChart(data, id, rng = Math.random, bpm = pickBpm(data, rng), songIndex = null) {
   const config = data.battle;
   const genre = genreFor(data, bpm);
+  // La track : tirée au hasard parmi celles du genre (ou imposée, pour les tests).
+  const songNo = songIndex ?? Math.min(genre.songs.length - 1, Math.floor(rng() * genre.songs.length));
+  const song = genre.songs[songNo];
   const level = rivalLevel(data, id);
   const { offbeat, doubles } = config.difficulty;
   const pOff = lerp(offbeat.easiest, offbeat.hardest, level);
@@ -158,8 +170,8 @@ export function createChart(data, id, rng = Math.random, bpm = pickBpm(data, rng
   const spb = 60 / bpm;
   const laneOf = (instrument) => genre.instruments.findIndex((i) => i.id === instrument);
   const { base, doubles: doubleHits, offbeats } = genre.groove;
-  const sections = genre.song.sections;
-  const bars = songBars(genre);
+  const sections = song.sections;
+  const bars = songBars(song);
   const notes = [];
   const at = (beat) => (config.leadInBeats + beat) * spb;
   // Le beat de base peut durer 1 ou 2 mesures (4 ou 8 temps) : il tourne en boucle.
@@ -186,7 +198,7 @@ export function createChart(data, id, rng = Math.random, bpm = pickBpm(data, rng
   onBeat(bars.length * 4, 0); // l'accord de fin
   notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
   const duration = (config.leadInBeats + bars.length * 4 + 2) * spb;
-  return { notes, duration, spb, bpm, genre: genre.id };
+  return { notes, duration, spb, bpm, genre: genre.id, song: songNo };
 }
 
 // ---- Le run : la partie en train de se jouer (pas sauvegardée) ----------------
@@ -272,7 +284,10 @@ export function startBattle(state, data, id, shareIndex = 0, rng = Math.random) 
   state.battles.last[id] = state.time;
   const chart = createChart(data, id, rng);
   const genre = genreById(data, chart.genre);
-  return [{ type: 'battleStart', id, name: t.name, rival: t.rival, stake, target, chart, bpm: chart.bpm, genre: genre.name }];
+  return [{
+    type: 'battleStart', id, name: t.name, rival: t.rival, stake, target, chart, bpm: chart.bpm, genre: genre.name,
+    track: genre.songs[chart.song].name,
+  }];
 }
 
 /**

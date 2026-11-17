@@ -46,6 +46,8 @@
     "battleOrgan": ["effets/battle-orgue-01.m4a"],
     "battleBassGuitar": ["effets/battle-basse-guitare-01.m4a"],
     "battlePad": ["effets/battle-pad-01.m4a"],
+    "battleScratch": ["effets/battle-scratch-01.m4a"],
+    "battleCowbell": ["effets/battle-cowbell-01.m4a"],
     "battleSnare": ["effets/battle-snare-01.m4a"],
     "battlePiano": ["effets/battle-piano-01.m4a"],
     "battleKick": ["effets/battle-kick-01.m4a"],
