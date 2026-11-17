@@ -10,8 +10,10 @@
 // (décompte 1-2-3-4 aux baguettes, puis grosse caisse sur chaque temps et charleston
 // sur chaque croche), et l'image lit la même horloge. Une note touche la ligne
 // exactement quand le temps sonne. Chaque pad joue son instrument (data/battle.json →
-// instruments) ; le piano joue l'accord de la mesure en cours (chords, en demi-tons
-// autour du do du fichier son).
+// instruments). Tout est dans la tonalité des accords (chords, en demi-tons autour du do
+// des fichiers son) : le piano joue l'accord de la mesure (tuned: "chord"), le kick du pad
+// et la grosse caisse de fond jouent sa fondamentale, la première note de l'accord
+// (tuned: "root"). Une note ratée ne fait aucun bruit.
 
 import {
   advanceRun, battleBlock, battleCooldownLeft, battlePayout, battleStakes, battleTarget, createRun, formatDuration,
@@ -20,12 +22,13 @@ import {
 
 const $ = (id) => document.getElementById(id);
 const LANE_KEYS = [['arrowleft', 'a', 'j', '1'], ['arrowdown', 's', 'k', '2'], ['arrowright', 'd', 'l', '3']];
-// Icône de chaque instrument (même id que data/battle.json). Pas d'émoji de cymbale : on la dessine.
-const CYMBAL_ICON = '<svg viewBox="0 0 32 32" width="34" height="34" aria-hidden="true" shape-rendering="crispEdges">'
-  + '<rect x="15" y="10" width="2" height="18" fill="#6b5a72"/><rect x="10" y="27" width="12" height="2" fill="#6b5a72"/>'
-  + '<rect x="3" y="9" width="26" height="3" fill="#c9962e"/><rect x="6" y="7" width="20" height="2" fill="#ffd166"/>'
-  + '<rect x="13" y="5" width="6" height="2" fill="#ffe7a3"/><rect x="5" y="12" width="22" height="1" fill="#8a6418"/></svg>';
-const ICONS = { 'caisse-claire': '🥁', piano: '🎹', cymbale: CYMBAL_ICON };
+// Icône de chaque instrument (même id que data/battle.json). Pas d'émoji de grosse caisse : on la dessine.
+const KICK_ICON = '<svg viewBox="0 0 32 32" width="34" height="34" aria-hidden="true" shape-rendering="crispEdges">'
+  + '<rect x="6" y="4" width="20" height="2" fill="#241a2e"/><rect x="4" y="6" width="24" height="20" fill="#241a2e"/>'
+  + '<rect x="6" y="26" width="20" height="2" fill="#241a2e"/><rect x="6" y="6" width="20" height="20" fill="#ff7eb6"/>'
+  + '<rect x="8" y="8" width="16" height="16" fill="#fbf4e6"/><rect x="11" y="13" width="10" height="6" fill="#ff8a5b"/>'
+  + '<rect x="2" y="28" width="4" height="2" fill="#6b5a72"/><rect x="26" y="28" width="4" height="2" fill="#6b5a72"/></svg>';
+const ICONS = { 'caisse-claire': '🥁', piano: '🎹', kick: KICK_ICON };
 const LOOKAHEAD_BEATS = 2.5; // une note apparaît en haut 2,5 temps avant de toucher la ligne
 const LINE = 0.86; // hauteur de la ligne de frappe, en part de la piste
 const JUDGE_TEXT = { perfect: 'Parfait !', good: 'Bien', stray: 'Dans le vide', miss: 'Raté' };
@@ -41,6 +44,7 @@ const pct = (x) => `${Math.round(x * 100)} %`;
 export function createBattleView(data, actions, { openSheet, closeSheet, audio }) {
   const lanes = data.battle.lanes;
   const instruments = data.battle.instruments;
+  const secondsPerBeat = 60 / data.battle.bpm;
   let territoryId = '';
   let shareIndex = 0;
   let run = null; // partie en cours
@@ -189,30 +193,35 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
     for (let b = lead; b < total; b += 1) {
       const at = startedAt + b * spb;
       const downbeat = (b - lead) % 4 === 0; // premier temps de la mesure
-      audio.playAt('battleBeat', at, { volume: downbeat ? 1 : 0.8 });
+      audio.playAt('battleBeat', at, { volume: downbeat ? 1 : 0.8, rate: semitoneRate(chordAt(b * spb)[0]) });
       audio.playAt('battleHat', at, { volume: 0.5 });
       audio.playAt('battleHat', at + spb / 2, { volume: 0.35 });
     }
-    audio.playAt('battleBeat', startedAt + total * spb); // la fin tombe sur le temps, avec la cymbale
-    audio.playAt('battleCymbal', startedAt + total * spb, { volume: 0.7 });
+    // La fin tombe sur le temps : un dernier kick sur la fondamentale du premier accord.
+    audio.playAt('battleKick', startedAt + total * spb, { rate: semitoneRate((data.battle.chords ?? [[0]])[0][0]) });
   }
 
   /** Temps de la partie, en secondes : l'horloge audio, moins la latence du haut-parleur. */
   const now = () => audio.now() - startedAt - lag;
 
-  /** L'accord de la mesure en cours, en demi-tons autour du do du fichier piano. */
+  const semitoneRate = (semitones) => 2 ** (semitones / 12);
+
+  /** L'accord de la mesure en cours, en demi-tons autour du do des fichiers son. */
   function chordAt(t) {
     const chords = data.battle.chords ?? [[0]];
-    const measure = Math.floor((t / run.chart.spb - data.battle.leadInBeats) / 4);
+    const measure = Math.max(0, Math.floor((t / secondsPerBeat - data.battle.leadInBeats) / 4));
     return chords[((measure % chords.length) + chords.length) % chords.length];
   }
 
-  /** Le son de l'instrument du pad (le piano joue un accord). */
+  /** Le son de l'instrument du pad, dans la tonalité de la mesure en cours. */
   function playInstrument(lane, t) {
     const instrument = instruments[lane];
     if (!instrument) return;
-    if (instrument.sound === 'battlePiano') {
-      for (const semitones of chordAt(t)) audio.play('battlePiano', { rate: 2 ** (semitones / 12), volume: 0.5 });
+    const chord = chordAt(t);
+    if (instrument.tuned === 'chord') {
+      for (const semitones of chord) audio.play(instrument.sound, { rate: semitoneRate(semitones), volume: 0.5 });
+    } else if (instrument.tuned === 'root') {
+      audio.play(instrument.sound, { rate: semitoneRate(chord[0]) });
     } else {
       audio.play(instrument.sound);
     }
@@ -285,7 +294,6 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
     for (const note of advanceRun(run, data, t)) {
       noteEls[run.notes.indexOf(note)].hidden = true;
       judge('miss', note.lane);
-      audio.play('battleMiss', { volume: 0.6 });
       renderScore();
     }
     run.notes.forEach((note, i) => {

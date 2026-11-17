@@ -35,8 +35,7 @@
     "battleHat": ["effets/battle-hat-01.m4a"],
     "battleSnare": ["effets/battle-snare-01.m4a"],
     "battlePiano": ["effets/battle-piano-01.m4a"],
-    "battleCymbal": ["effets/battle-cymbal-01.m4a"],
-    "battleMiss": ["effets/battle-miss-01.m4a"],
+    "battleKick": ["effets/battle-kick-01.m4a"],
     "battleWin": ["effets/battle-win-01.m4a"],
     "battleLose": ["effets/battle-lose-01.m4a"]
   },

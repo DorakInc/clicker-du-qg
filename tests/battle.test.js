@@ -41,6 +41,7 @@ test('battle.json : réglages valides', () => {
     assert.match(i.id, /^[a-z0-9-]+$/, `battle.json : instrument « ${i.id} »`);
     assert.equal(typeof i.name, 'string', `battle.json/instruments/${i.id}.name`);
     assert.ok(Array.isArray(data.sounds.effects[i.sound]), `battle.json/instruments/${i.id} : son « ${i.sound} » absent de sounds.json`);
+    assert.ok([undefined, 'chord', 'root'].includes(i.tuned), `battle.json/instruments/${i.id}.tuned : "chord", "root" ou rien`);
   }
   assert.ok(b.chords.length > 0 && b.chords.every((c) => c.length > 0 && c.every(Number.isInteger)), 'battle.json : chords');
   // Le décompte fait une mesure de 4 temps, et la battle finit au bout d'une mesure.
