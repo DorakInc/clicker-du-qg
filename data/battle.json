@@ -8,12 +8,13 @@
       "id": "boom-bap",
       "name": "Boom bap",
       "bpm": { "min": 88, "max": 97 },
+      "key": { "name": "sol mineur", "transpose": -2, "flats": true },
       "swing": 0.58,
       "instruments": [
         { "id": "scratch", "name": "Scratch", "sound": "battleScratch" },
         { "id": "caisse-claire", "name": "Caisse claire", "sound": "battleSnare" },
         { "id": "rhodes", "name": "Rhodes", "sound": "battleRhodes", "tuned": "chord" },
-        { "id": "kick", "name": "Kick", "sound": "battleKick" }
+        { "id": "kick", "name": "Kick", "sound": "battleKick", "tuned": "key" }
       ],
       "metronome": [
         { "at": 0, "sound": "battleHat", "volume": 0.8 },
@@ -70,9 +71,10 @@
       "id": "afrobeats",
       "name": "Afrobeats",
       "bpm": { "min": 98, "max": 115 },
+      "key": { "name": "si♭ mineur", "transpose": 1, "flats": true },
       "swing": 0.5,
       "instruments": [
-        { "id": "kick", "name": "Kick", "sound": "battleKick" },
+        { "id": "kick", "name": "Kick", "sound": "battleKick", "tuned": "key" },
         { "id": "rimshot", "name": "Rimshot", "sound": "battleRimshot" },
         { "id": "guitare", "name": "Guitare", "sound": "battleGuitar", "tuned": "arpeggio" },
         { "id": "conga", "name": "Conga", "sound": "battleConga" }
@@ -139,12 +141,13 @@
       "id": "house",
       "name": "House",
       "bpm": { "min": 116, "max": 130 },
+      "key": { "name": "si mineur", "transpose": 2, "flats": false },
       "swing": 0.5,
       "instruments": [
         { "id": "cowbell", "name": "Cowbell", "sound": "battleCowbell" },
         { "id": "clap", "name": "Clap", "sound": "battleClap" },
         { "id": "piano", "name": "Piano", "sound": "battlePiano", "tuned": "chord" },
-        { "id": "kick", "name": "Kick", "sound": "battleKick" }
+        { "id": "kick", "name": "Kick", "sound": "battleKick", "tuned": "key" }
       ],
       "metronome": [
         { "at": 0, "sound": "battleHat", "volume": 0.7 },

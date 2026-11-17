@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   abandonBattle, advanceRun, battleBlock, battlePayout, battleRivals, battleStakes, battleTarget, createChart,
-  chordTones, createRun, createState, deserialize, genreById, genreFor, pickBpm, songAt, songBars, swingAt, finishBattle, rivalLevel, runAccuracy, runDone, serialize, startBattle, tapRun, tick,
+  chordTones, transposeChordName, trackKeyName, trackTonic, createRun, createState, deserialize, genreById, genreFor, pickBpm, songAt, songBars, swingAt, finishBattle, rivalLevel, runAccuracy, runDone, serialize, startBattle, tapRun, tick,
 } from '../src/game/index.js';
 import { loadData } from './helpers.js';
 
@@ -45,7 +45,7 @@ test('battle.json : réglages valides', () => {
       assert.match(i.id, /^[a-z0-9-]+$/, `battle.json/${g.id} : instrument « ${i.id} »`);
       assert.equal(typeof i.name, 'string', `battle.json/${g.id}/instruments/${i.id}.name`);
       assert.ok((data.sounds.effects[i.sound] ?? []).length > 0, `battle.json/${g.id}/instruments/${i.id} : son « ${i.sound} » vide ou absent de sounds.json`);
-      assert.ok([undefined, 'chord', 'arpeggio', 'root'].includes(i.tuned), `battle.json/${g.id}/instruments/${i.id}.tuned : "chord", "arpeggio", "root" ou rien`);
+      assert.ok([undefined, 'chord', 'arpeggio', 'root', 'key'].includes(i.tuned), `battle.json/${g.id}/instruments/${i.id}.tuned : "chord", "arpeggio", "root", "key" ou rien`);
     }
   }
     // Le décompte fait une mesure de 4 temps, et la battle finit au bout d'une mesure.
@@ -266,6 +266,45 @@ test('la ligne de basse : fondamentale, tierce, quinte, septième de l\'accord',
   assert.deepEqual(chordTones(chords.G7), [-5, -1, 2, 5]);
   assert.deepEqual(chordTones(chords.E7), [4, 8, 11, 14]);
   for (const c of Object.values(chords)) assert.equal(chordTones(c)[0], c.root, 'la note 0 est toujours la fondamentale');
+});
+
+test('la tonalité : une par genre, et le kick s\'accorde sur la tonique de la track', () => {
+  const { genres } = data.battle;
+  for (const g of genres) {
+    assert.ok(Number.isInteger(g.key?.transpose) && Math.abs(g.key.transpose) <= 6, `${g.id}.key.transpose : de −6 à +6`);
+    assert.equal(typeof g.key.name, 'string');
+    assert.equal(g.instruments.find((i) => i.id === 'kick')?.tuned, 'key', `${g.id} : le kick est accordé sur la tonique`);
+  }
+  assert.equal(new Set(genres.map((g) => g.key.transpose)).size, genres.length, 'chaque genre a sa tonalité');
+
+  assert.equal(transposeChordName('Cmaj7', -2, true), 'Bbmaj7');
+  assert.equal(transposeChordName('Am7', 2, false), 'Bm7');
+  assert.equal(transposeChordName('G', 1, true), 'Ab');
+  assert.equal(transposeChordName('E7', -2, true), 'D7');
+
+  const key = (id, i) => trackKeyName(data, genreById(data, id), genreById(data, id).songs[i]);
+  assert.equal(key('boom-bap', 0), 'si♭ majeur');
+  assert.equal(key('boom-bap', 1), 'sol mineur');
+  assert.equal(key('afrobeats', 0), 'ré♭ majeur');
+  assert.equal(key('afrobeats', 1), 'si♭ mineur');
+  assert.equal(key('house', 0), 'si mineur');
+  assert.equal(key('house', 1), 'ré majeur');
+
+  const tonic = (id, i) => trackTonic(data, genreById(data, id), genreById(data, id).songs[i]);
+  assert.equal(tonic('boom-bap', 1), -5, 'sol : 5 demi-tons sous le do');
+  assert.equal(tonic('house', 0), -1, 'si : 1 demi-ton sous le do');
+  for (const g of genres) for (const song of g.songs) {
+    const t = trackTonic(data, g, song);
+    assert.ok(t >= -6 && t <= 5, `${g.id}/${song.name} : tonique trop loin du do (${t})`);
+  }
+
+  // Les accords suivent la tonalité du genre, noms compris.
+  const bb = genreById(data, 'boom-bap');
+  const first = songAt(data, bb.songs[0], 0, bb.key);
+  assert.equal(first.chord, 'Bbmaj7');
+  assert.equal(first.root, -2);
+  assert.deepEqual(first.notes, [-2, 2, 5, 9]);
+  assert.equal(songAt(data, bb.songs[0], 0).chord, 'Cmaj7', 'sans tonalité : les accords de battle.json');
 });
 
 test('le jugement : parfait, bon, raté, et frappes dans le vide', () => {

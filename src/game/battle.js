@@ -137,16 +137,54 @@ export function chordTones(chord) {
  * { bar, section, sectionName, chord, root, notes, ending }.
  * Pendant le décompte : la première mesure ; après la dernière : l'accord de fin.
  */
-export function songAt(data, song, beat) {
+export function songAt(data, song, beat, key = null) {
   const bars = songBars(song);
   const bar = Math.floor(beat / 4);
   const ending = bar >= bars.length;
   const current = ending ? { section: song.sections.length - 1, chord: song.ending } : bars[Math.max(0, bar)];
   const def = data.battle.chords[current.chord];
+  // La tonalité du genre (genre → key) : tout est transposé de `transpose` demi-tons, noms compris.
+  const shift = key?.transpose ?? 0;
+  const moved = { root: def.root + shift, notes: def.notes.map((n) => n + shift) };
   return {
     bar, ending, section: current.section, sectionName: ending ? 'Fin' : song.sections[current.section].name,
-    chord: current.chord, root: def.root, notes: def.notes, tones: chordTones(def),
+    chord: transposeChordName(current.chord, shift, key?.flats ?? true),
+    root: moved.root, notes: moved.notes, tones: chordTones(moved),
   };
+}
+
+const SHARPS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const FLATS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+/** Le nom d'un accord transposé : « Cmaj7 » de −2 demi-tons → « Bbmaj7 » (bémols ou dièses selon la tonalité). */
+export function transposeChordName(name, semitones, flats = true) {
+  const match = /^([A-G])([#b]?)(.*)$/.exec(name);
+  if (!match) return name;
+  const index = SHARPS.indexOf(match[1]) + (match[2] === '#' ? 1 : match[2] === 'b' ? -1 : 0);
+  const note = (flats ? FLATS : SHARPS)[(((index + semitones) % 12) + 12) % 12];
+  return note + match[3];
+}
+
+const NOTE_NAMES = {
+  flats: ['do', 'ré♭', 'ré', 'mi♭', 'mi', 'fa', 'sol♭', 'sol', 'la♭', 'la', 'si♭', 'si'],
+  sharps: ['do', 'do♯', 'ré', 'ré♯', 'mi', 'fa', 'fa♯', 'sol', 'sol♯', 'la', 'la♯', 'si'],
+};
+
+/** La tonalité d'une track, en français : « si♭ majeur », « sol mineur » (d'après son accord de fin). */
+export function trackKeyName(data, genre, song) {
+  const tonic = data.battle.chords[song.ending].root + (genre.key?.transpose ?? 0);
+  const names = genre.key?.flats === false ? NOTE_NAMES.sharps : NOTE_NAMES.flats;
+  const minor = /^[A-G][#b]?m(?!aj)/.test(song.ending);
+  return `${names[((tonic % 12) + 12) % 12]} ${minor ? 'mineur' : 'majeur'}`;
+}
+
+/**
+ * La tonique d'une track dans la tonalité de son genre, en demi-tons autour du do des fichiers son,
+ * ramenée entre −6 et +5 pour ne pas trop étirer le son (le kick s'accorde dessus).
+ */
+export function trackTonic(data, genre, song) {
+  const tonic = data.battle.chords[song.ending].root + (genre.key?.transpose ?? 0);
+  return ((((tonic + 6) % 12) + 12) % 12) - 6;
 }
 
 /**

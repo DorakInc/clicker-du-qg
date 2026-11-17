@@ -20,7 +20,7 @@
 // (tuned: "root"). Une note ratée ne fait aucun bruit.
 
 import {
-  advanceRun, genreById, songAt, swingAt, battleBlock, battleCooldownLeft, battlePayout, battleStakes, battleTarget, createRun, formatDuration,
+  advanceRun, genreById, songAt, trackKeyName, trackTonic, swingAt, battleBlock, battleCooldownLeft, battlePayout, battleStakes, battleTarget, createRun, formatDuration,
   formatMoney, formatNumber, runAccuracy, runDone, tapRun,
 } from '../game/index.js';
 
@@ -185,13 +185,13 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
     song = genre.songs[start.chart.song] ?? genre.songs[0];
     setInstruments(genre.instruments);
     $('battle-title').textContent = `${genre.name} · ${start.chart.bpm} BPM · « ${song.name} »`;
+    $('battle-song').textContent = `Tonalité : ${trackKeyName(data, genre, song)}`;
     $('battle-track').style.setProperty('--beat', `${Math.round(start.chart.spb * 1000)}ms`);
     $('battle-rival-name').textContent = start.rival;
     $('battle-target').textContent = pct(target);
     $('battle-accuracy').textContent = '—';
     $('battle-combo').textContent = '';
     $('battle-judge').textContent = '';
-    $('battle-song').textContent = '';
     showPhase('play');
     openSheet('sheet-battle', { locked: true }); // pas de fermeture en pleine battle
     await audio.ready(); // le son débloqué et les fichiers décodés, sinon la batterie partirait en retard
@@ -234,7 +234,7 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
    * Sur l'accord de fin, seuls les sons du premier temps jouent, tenus deux temps.
    */
   function scheduleBacking(bar, barStart, spb, ending) {
-    const chord = songAt(data, song, bar * 4);
+    const chord = songAt(data, song, bar * 4, genre.key);
     for (const hit of genre.backing ?? []) {
       if (ending && hit.at > 0) continue;
       const when = barStart + swingAt(genre, hit.at) * spb;
@@ -259,7 +259,7 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
   const semitoneRate = (semitones) => 2 ** (semitones / 12);
 
   /** La mesure de la chanson au temps `t` de la partie (accord, section). */
-  const songNow = (t) => songAt(data, song, Math.round(t / run.chart.spb * 4) / 4 - data.battle.leadInBeats);
+  const songNow = (t) => songAt(data, song, Math.round(t / run.chart.spb * 4) / 4 - data.battle.leadInBeats, genre.key);
 
   /** Le son de l'instrument du pad, dans la tonalité de la mesure en cours. */
   function playInstrument(lane, t) {
@@ -272,6 +272,9 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
       notes.forEach((semitones, k) => audio.playAt(instrument.sound, now + k * 0.035, { rate: semitoneRate(semitones), volume: 0.45 }));
     } else if (instrument.tuned === 'chord') {
       for (const semitones of notes) audio.play(instrument.sound, { rate: semitoneRate(semitones), volume: 0.4 });
+    } else if (instrument.tuned === 'key') {
+      // Le kick : accordé une fois pour toutes sur la tonique de la track, pas sur chaque accord.
+      audio.play(instrument.sound, { rate: semitoneRate(trackTonic(data, genre, song)) });
     } else if (instrument.tuned === 'root') {
       audio.play(instrument.sound, { rate: semitoneRate(root) });
     } else {
@@ -336,8 +339,8 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
       } else if (beat === lead) {
         $('battle-judge').textContent = '';
       }
-      if (beat >= 0) {
-        const bar = songAt(data, song, beat - lead);
+      if (beat >= lead) {
+        const bar = songAt(data, song, beat - lead, genre.key);
         $('battle-song').textContent = `${bar.sectionName} · ${bar.chord}`;
       }
       $('battle-track').classList.toggle('is-beat', beat >= 0);
