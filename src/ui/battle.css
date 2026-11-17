@@ -41,7 +41,10 @@
   position: absolute; left: 0; right: 0; top: 86%; height: 4px; margin-top: -2px; pointer-events: none;
   background: var(--lamp); box-shadow: 0 0 0 2px var(--ink);
 }
-.battle-track.is-beat .battle-line { background: var(--paper-2); }
+.battle-track.is-pulse .battle-line { animation: battle-line calc(var(--beat, 700ms) / 2) steps(3, end); }
+.battle-track.is-downbeat.is-pulse .battle-line { animation-name: battle-line-strong; }
+@keyframes battle-line { from { background: var(--paper-2); height: 8px; margin-top: -4px; } }
+@keyframes battle-line-strong { from { background: var(--pink); height: 10px; margin-top: -5px; } }
 .battle-note {
   position: absolute; left: 14%; right: 14%; height: 18px; margin-top: -9px; pointer-events: none;
   background: var(--pink); border: 3px solid var(--ink); border-radius: 4px; box-shadow: 0 3px 0 var(--shadow);
@@ -61,7 +64,8 @@
 
 .battle-pads { display: grid; grid-template-columns: repeat(var(--lanes, 3), 1fr); gap: 8px; margin-top: 10px; }
 .battle-pad {
-  height: 64px; padding: 0; cursor: pointer; font-size: 1.8rem; touch-action: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  height: 72px; padding: 0; cursor: pointer; color: var(--ink); touch-action: none;
   background: var(--paper-2); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
 }
 .battle-pad:active, .battle-pad.is-hit { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
@@ -69,9 +73,12 @@
 .battle-pad.is-hit[data-result="perfect"] { background: var(--lamp); }
 .battle-pad.is-hit[data-result="good"] { background: var(--weed); }
 .battle-pad.is-hit[data-result="miss"], .battle-pad.is-hit[data-result="stray"] { background: #ffb3b3; }
+.battle-pad-icon { display: grid; place-items: center; height: 36px; font-size: 1.8rem; line-height: 1; }
+.battle-pad-name { font: 700 .6rem var(--font-label); text-transform: uppercase; }
 @keyframes battle-pad { to { transform: none; box-shadow: 4px 4px 0 var(--ink); } }
 
 .battle-result .btn-ok { justify-content: center; background: var(--sunset); color: var(--ink); }
 
 [data-motion="reduced"] .battle-judge.is-pop,
+[data-motion="reduced"] .battle-track.is-pulse .battle-line,
 [data-motion="reduced"] .battle-pad.is-hit { animation: none; }

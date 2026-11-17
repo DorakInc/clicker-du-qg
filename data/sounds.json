@@ -29,12 +29,16 @@
     "adoptPet": [],
     "treatPet": [],
     "petPet": [],
-    "battleStart": ["effets/provisoire/battle-debut.mp3"],
-    "battleNote": ["effets/provisoire/battle-note.mp3"],
-    "battleMiss": ["effets/provisoire/battle-rate.mp3"],
-    "battleWin": ["effets/provisoire/battle-victoire.mp3"],
-    "battleLose": ["effets/provisoire/battle-defaite.mp3"],
-    "battleBeat": ["effets/provisoire/battle-temps.mp3"]
+    "battleStart": [],
+    "battleCount": ["effets/battle-count-01.m4a"],
+    "battleBeat": ["effets/battle-beat-01.m4a"],
+    "battleHat": ["effets/battle-hat-01.m4a"],
+    "battleSnare": ["effets/battle-snare-01.m4a"],
+    "battlePiano": ["effets/battle-piano-01.m4a"],
+    "battleCymbal": ["effets/battle-cymbal-01.m4a"],
+    "battleMiss": ["effets/battle-miss-01.m4a"],
+    "battleWin": ["effets/battle-win-01.m4a"],
+    "battleLose": ["effets/battle-lose-01.m4a"]
   },
   "music": {
     "normal": null,

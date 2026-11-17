@@ -291,8 +291,7 @@ function startGame(data, state, { audio, settings, motion, offline }) {
       leaderboard.requestSubmit();
       return events;
     },
-    sound: (type) => audio.play(type),
-  }, { openSheet: (id, options) => view.openSheet(id, options), closeSheet: (...args) => view.closeSheet(...args) });
+  }, { openSheet: (id, options) => view.openSheet(id, options), closeSheet: (...args) => view.closeSheet(...args), audio });
 
   /** Réponse du joueur à une question d'événement (police, voisin...). */
   function chooseEvent(index) {

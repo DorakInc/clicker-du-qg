@@ -3,9 +3,15 @@
 // qui tombent et on transmet les frappes. La mise et le résultat passent par `actions` :
 //   actions.start(idTerritoire, indexMise) → l'événement battleStart (avec la partition), ou null
 //   actions.finish(précision)              → les événements battleWin / battleLose (+ conquête)
-//   actions.sound(type)                    → petit son (battleBeat à chaque temps, battleNote, battleMiss)
 //   actions.getState()                     → l'état du jeu, pour les mises et les blocages
-// Le temps de la partie vient de performance.now() : il ne dépend pas de la boucle du jeu.
+// `audio` (src/audio/audio.js) donne l'horloge et joue les sons.
+//
+// Son et image calés : toute la batterie est programmée d'avance sur l'horloge audio
+// (décompte 1-2-3-4 aux baguettes, puis grosse caisse sur chaque temps et charleston
+// sur chaque croche), et l'image lit la même horloge. Une note touche la ligne
+// exactement quand le temps sonne. Chaque pad joue son instrument (data/battle.json →
+// instruments) ; le piano joue l'accord de la mesure en cours (chords, en demi-tons
+// autour du do du fichier son).
 
 import {
   advanceRun, battleBlock, battleCooldownLeft, battlePayout, battleStakes, battleTarget, createRun, formatDuration,
@@ -14,7 +20,12 @@ import {
 
 const $ = (id) => document.getElementById(id);
 const LANE_KEYS = [['arrowleft', 'a', 'j', '1'], ['arrowdown', 's', 'k', '2'], ['arrowright', 'd', 'l', '3']];
-const LANE_ICONS = ['🥁', '🎹', '🎤'];
+// Icône de chaque instrument (même id que data/battle.json). Pas d'émoji de cymbale : on la dessine.
+const CYMBAL_ICON = '<svg viewBox="0 0 32 32" width="34" height="34" aria-hidden="true" shape-rendering="crispEdges">'
+  + '<rect x="15" y="10" width="2" height="18" fill="#6b5a72"/><rect x="10" y="27" width="12" height="2" fill="#6b5a72"/>'
+  + '<rect x="3" y="9" width="26" height="3" fill="#c9962e"/><rect x="6" y="7" width="20" height="2" fill="#ffd166"/>'
+  + '<rect x="13" y="5" width="6" height="2" fill="#ffe7a3"/><rect x="5" y="12" width="22" height="1" fill="#8a6418"/></svg>';
+const ICONS = { 'caisse-claire': '🥁', piano: '🎹', cymbale: CYMBAL_ICON };
 const LOOKAHEAD_BEATS = 2.5; // une note apparaît en haut 2,5 temps avant de toucher la ligne
 const LINE = 0.86; // hauteur de la ligne de frappe, en part de la piste
 const JUDGE_TEXT = { perfect: 'Parfait !', good: 'Bien', stray: 'Dans le vide', miss: 'Raté' };
@@ -27,12 +38,15 @@ const BLOCK_TEXT = {
 };
 const pct = (x) => `${Math.round(x * 100)} %`;
 
-export function createBattleView(data, actions, { openSheet, closeSheet }) {
+export function createBattleView(data, actions, { openSheet, closeSheet, audio }) {
   const lanes = data.battle.lanes;
+  const instruments = data.battle.instruments;
   let territoryId = '';
   let shareIndex = 0;
   let run = null; // partie en cours
-  let startedAt = 0;
+  let startedAt = 0; // instant de l'horloge audio où la partie commence (t = 0)
+  let lag = 0; // latence de sortie : l'image attend que le son sorte du haut-parleur
+  let starting = false;
   let target = 0;
   let noteEls = [];
   let frameId = 0;
@@ -51,8 +65,14 @@ export function createBattleView(data, actions, { openSheet, closeSheet }) {
     const pad = document.createElement('button');
     pad.type = 'button';
     pad.className = 'battle-pad';
-    pad.textContent = LANE_ICONS[i] ?? String(i + 1);
-    pad.setAttribute('aria-label', `Piste ${i + 1}`);
+    const icon = document.createElement('span');
+    icon.className = 'battle-pad-icon';
+    icon.innerHTML = ICONS[instruments[i]?.id] ?? String(i + 1);
+    const name = document.createElement('span');
+    name.className = 'battle-pad-name';
+    name.textContent = instruments[i]?.name ?? `Piste ${i + 1}`;
+    pad.append(icon, name);
+    pad.setAttribute('aria-label', instruments[i]?.name ?? `Piste ${i + 1}`);
     pad.addEventListener('pointerdown', (event) => { event.preventDefault(); tap(i); });
     // Au clavier (Entrée / espace sur le pad), le clic arrive sans pointerdown.
     pad.addEventListener('click', (event) => { if (event.detail === 0) tap(i); });
@@ -130,10 +150,20 @@ export function createBattleView(data, actions, { openSheet, closeSheet }) {
   }
 
   // ---- 2. La partie ----
-  $('battle-go').onclick = () => {
+  $('battle-go').onclick = async () => {
+    if (run || starting) return;
+    starting = true;
     const start = actions.start(territoryId, shareIndex);
-    if (!start) { renderSetup(); return; }
+    if (!start) { starting = false; renderSetup(); return; }
     target = start.target;
+    $('battle-rival-name').textContent = start.rival;
+    $('battle-target').textContent = pct(target);
+    $('battle-accuracy').textContent = '—';
+    $('battle-combo').textContent = '';
+    $('battle-judge').textContent = '';
+    showPhase('play');
+    openSheet('sheet-battle', { locked: true }); // pas de fermeture en pleine battle
+    await audio.ready(); // le son débloqué et les fichiers décodés, sinon la batterie partirait en retard
     run = createRun(start.chart);
     noteEls = run.notes.map((note) => {
       const n = document.createElement('div');
@@ -142,19 +172,51 @@ export function createBattleView(data, actions, { openSheet, closeSheet }) {
       laneEls[note.lane].append(n);
       return n;
     });
-    $('battle-rival-name').textContent = start.rival;
-    $('battle-target').textContent = pct(target);
-    $('battle-accuracy').textContent = '—';
-    $('battle-combo').textContent = '';
-    $('battle-judge').textContent = '';
     beatShown = -1;
-    showPhase('play');
-    openSheet('sheet-battle', { locked: true }); // pas de fermeture en pleine battle
-    startedAt = performance.now();
+    startedAt = audio.now() + 0.25; // un quart de seconde pour programmer les sons
+    lag = audio.latency();
+    scheduleDrums(start.chart);
+    starting = false;
     frameId = requestAnimationFrame(frame);
   };
 
-  const now = () => (performance.now() - startedAt) / 1000;
+  /** Toute la batterie de la partie, programmée d'avance sur l'horloge audio. */
+  function scheduleDrums(chart) {
+    const { spb } = chart;
+    const lead = data.battle.leadInBeats;
+    const total = lead + data.battle.beats;
+    for (let b = 0; b < lead; b += 1) audio.playAt('battleCount', startedAt + b * spb, { volume: b === 0 ? 1 : 0.8 });
+    for (let b = lead; b < total; b += 1) {
+      const at = startedAt + b * spb;
+      const downbeat = (b - lead) % 4 === 0; // premier temps de la mesure
+      audio.playAt('battleBeat', at, { volume: downbeat ? 1 : 0.8 });
+      audio.playAt('battleHat', at, { volume: 0.5 });
+      audio.playAt('battleHat', at + spb / 2, { volume: 0.35 });
+    }
+    audio.playAt('battleBeat', startedAt + total * spb); // la fin tombe sur le temps, avec la cymbale
+    audio.playAt('battleCymbal', startedAt + total * spb, { volume: 0.7 });
+  }
+
+  /** Temps de la partie, en secondes : l'horloge audio, moins la latence du haut-parleur. */
+  const now = () => audio.now() - startedAt - lag;
+
+  /** L'accord de la mesure en cours, en demi-tons autour du do du fichier piano. */
+  function chordAt(t) {
+    const chords = data.battle.chords ?? [[0]];
+    const measure = Math.floor((t / run.chart.spb - data.battle.leadInBeats) / 4);
+    return chords[((measure % chords.length) + chords.length) % chords.length];
+  }
+
+  /** Le son de l'instrument du pad (le piano joue un accord). */
+  function playInstrument(lane, t) {
+    const instrument = instruments[lane];
+    if (!instrument) return;
+    if (instrument.sound === 'battlePiano') {
+      for (const semitones of chordAt(t)) audio.play('battlePiano', { rate: 2 ** (semitones / 12), volume: 0.5 });
+    } else {
+      audio.play(instrument.sound);
+    }
+  }
 
   function judge(result, lane) {
     const el = $('battle-judge');
@@ -176,7 +238,7 @@ export function createBattleView(data, actions, { openSheet, closeSheet }) {
     if (!run) return;
     const { result, note } = tapRun(run, data, lane, now());
     if (note) noteEls[run.notes.indexOf(note)].hidden = true;
-    actions.sound(result === 'stray' ? 'battleMiss' : 'battleNote');
+    playInstrument(lane, now());
     judge(result, lane);
     renderScore();
   }
@@ -202,18 +264,28 @@ export function createBattleView(data, actions, { openSheet, closeSheet }) {
     if (beat !== beatShown) {
       beatShown = beat;
       const lead = data.battle.leadInBeats;
-      if (beat < lead) {
+      if (beat >= 0 && beat < lead) {
+        // Le décompte : une mesure de 4 temps, comme les baguettes.
         const el = $('battle-judge');
         el.dataset.result = 'count';
-        el.textContent = beat === lead - 1 ? 'Go !' : String(lead - 1 - beat);
+        el.textContent = String(beat + 1);
+        el.classList.remove('is-pop');
+        void el.offsetWidth;
+        el.classList.add('is-pop');
+      } else if (beat === lead) {
+        $('battle-judge').textContent = '';
       }
-      $('battle-track').classList.toggle('is-beat', beat % 2 === 0);
-      if (t < run.chart.duration) actions.sound('battleBeat'); // la grosse caisse donne le tempo
+      $('battle-track').classList.toggle('is-beat', beat >= 0);
+      $('battle-track').classList.toggle('is-downbeat', beat >= lead && (beat - lead) % 4 === 0);
+      $('battle-track').classList.remove('is-pulse');
+      void $('battle-track').offsetWidth;
+      $('battle-track').classList.add('is-pulse');
     }
 
     for (const note of advanceRun(run, data, t)) {
       noteEls[run.notes.indexOf(note)].hidden = true;
       judge('miss', note.lane);
+      audio.play('battleMiss', { volume: 0.6 });
       renderScore();
     }
     run.notes.forEach((note, i) => {

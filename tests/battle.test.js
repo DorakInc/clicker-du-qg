@@ -36,6 +36,16 @@ test('battle.json : réglages valides', () => {
   const b = data.battle;
   assert.ok(b.bpm > 0 && b.beats > 0 && b.leadInBeats >= 0, 'battle.json : bpm, beats, leadInBeats');
   assert.ok(Number.isInteger(b.lanes) && b.lanes >= 2, 'battle.json : au moins 2 pistes');
+  assert.equal(b.instruments.length, b.lanes, 'battle.json : un instrument par piste');
+  for (const i of b.instruments) {
+    assert.match(i.id, /^[a-z0-9-]+$/, `battle.json : instrument « ${i.id} »`);
+    assert.equal(typeof i.name, 'string', `battle.json/instruments/${i.id}.name`);
+    assert.ok(Array.isArray(data.sounds.effects[i.sound]), `battle.json/instruments/${i.id} : son « ${i.sound} » absent de sounds.json`);
+  }
+  assert.ok(b.chords.length > 0 && b.chords.every((c) => c.length > 0 && c.every(Number.isInteger)), 'battle.json : chords');
+  // Le décompte fait une mesure de 4 temps, et la battle finit au bout d'une mesure.
+  assert.equal(b.leadInBeats, 4, 'battle.json : le décompte dure une mesure (4 temps)');
+  assert.equal(b.beats % 4, 0, 'battle.json : beats doit faire un nombre entier de mesures');
   assert.ok(b.windows.perfect > 0 && b.windows.good > b.windows.perfect, 'battle.json : 0 < perfect < good');
   assert.ok(b.windows.good < 30 / b.bpm, 'battle.json : la fenêtre « good » doit rester sous un demi-contretemps');
   assert.ok(b.points.perfect === 1 && b.points.good > 0 && b.points.good < 1, 'battle.json : points');

@@ -3,6 +3,12 @@
   "beats": 24,
   "leadInBeats": 4,
   "lanes": 3,
+  "instruments": [
+    { "id": "caisse-claire", "name": "Caisse claire", "sound": "battleSnare" },
+    { "id": "piano", "name": "Piano", "sound": "battlePiano" },
+    { "id": "cymbale", "name": "Cymbale", "sound": "battleCymbal" }
+  ],
+  "chords": [[-3, 0, 4], [-7, -3, 0], [0, 4, 7], [-5, -1, 2]],
   "windows": { "perfect": 0.08, "good": 0.16 },
   "points": { "perfect": 1, "good": 0.6 },
   "stakes": [0.1, 0.25, 0.5],
