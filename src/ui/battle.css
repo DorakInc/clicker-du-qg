@@ -23,11 +23,14 @@
 
 /* ---- La partie ---- */
 .battle-hud {
-  display: grid; grid-template-columns: 1fr auto 1fr; align-items: baseline; gap: 6px;
-  font: .75rem var(--font-label);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: baseline; gap: 6px;
+  font: .7rem var(--font-label);
 }
+.battle-hud > :first-child, .battle-hud > :last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .battle-hud > :last-child { text-align: right; }
 .battle-hud strong { font-size: 1rem; }
+.battle-mid { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.battle-song { font-weight: 700; white-space: nowrap; }
 .battle-combo { color: #b23a3a; font-weight: 700; }
 
 .battle-track {

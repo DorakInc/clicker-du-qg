@@ -1,7 +1,7 @@
-// Battle de beat : un mini-jeu de rythme d'environ 20 s contre un rival de la carte.
+// Battle de beat : un mini-jeu de rythme d'environ 25 s (une petite chanson de 8 mesures) contre un rival de la carte.
 //   - On choisit un territoire ouvert (ou en campagne) qui a un rival, et une mise :
 //     une part du cash (data/battle.json → stakes, jamais plus de 50 %).
-//   - Des notes tombent sur 3 pistes au tempo du QG (86 BPM). Le joueur tape en rythme ;
+//   - Des notes tombent sur 3 pistes (caisse claire, piano, kick) au tempo du QG (86 BPM) : elles forment un vrai beat sur la grille d'accords de la chanson. Le joueur tape en rythme ;
 //     chaque note est « parfaite », « bonne » ou ratée. Taper dans le vide coûte un peu.
 //   - Le rival a un score à battre (sa précision), plus dur pour les gros territoires.
 //     Score battu : la mise revient multipliée (× 1,5 au score du rival, jusqu'à × 3 pour
@@ -87,9 +87,42 @@ export function secondsPerBeat(data) {
   return 60 / data.battle.bpm;
 }
 
+// ---- La chanson -----------------------------------------------------------------
+// Une battle est une petite chanson (data/battle.json → song) : un décompte d'une mesure,
+// puis des sections de 4 mesures (couplet, refrain), un accord par mesure, et une fin sur
+// l'accord de départ (cadence V7 → I). Les temps se comptent depuis la fin du décompte :
+// le temps 0 est le premier temps de la première mesure.
+
+/** Les mesures de la chanson, dans l'ordre : [{ section, chord }]. */
+export function songBars(data) {
+  return data.battle.song.sections.flatMap((section, i) => section.chords.map((chord) => ({ section: i, chord })));
+}
+
+/**
+ * La mesure jouée au temps `beat` (compté depuis la fin du décompte, peut être négatif) :
+ * { bar, section, sectionName, chord, root, notes, ending }.
+ * Pendant le décompte : la première mesure ; après la dernière : l'accord de fin.
+ */
+export function songAt(data, beat) {
+  const { song, chords } = data.battle;
+  const bars = songBars(data);
+  const bar = Math.floor(beat / 4);
+  const ending = bar >= bars.length;
+  const current = ending ? { section: song.sections.length - 1, chord: song.ending } : bars[Math.max(0, bar)];
+  const def = chords[current.chord];
+  return {
+    bar, ending, section: current.section, sectionName: ending ? 'Fin' : song.sections[current.section].name,
+    chord: current.chord, root: def.root, notes: def.notes,
+  };
+}
+
 /**
  * La partition : notes { t (secondes depuis le début), lane }, triées.
- * Une note par temps, plus des contretemps et des notes doubles selon la force du rival.
+ * Elle joue un vrai beat (data/battle.json → groove) : sur chaque mesure, piano au 1er temps
+ * (le changement d'accord), caisse claire sur 2 et 4, kick sur 3. Contre un rival plus fort,
+ * le kick double le piano au 1er temps et des contretemps s'ajoutent (kick syncopé, piano
+ * qui annonce l'accord suivant), plus souvent au refrain. La dernière note tombe sur l'accord
+ * de fin, le temps juste après la dernière mesure.
  */
 export function createChart(data, id, rng = Math.random) {
   const config = data.battle;
@@ -98,19 +131,31 @@ export function createChart(data, id, rng = Math.random) {
   const pOff = lerp(offbeat.easiest, offbeat.hardest, level);
   const pDouble = lerp(doubles.easiest, doubles.hardest, level);
   const spb = secondsPerBeat(data);
-  const lane = () => Math.min(config.lanes - 1, Math.floor(rng() * config.lanes));
-  const other = (l) => (l + 1 + Math.min(config.lanes - 2, Math.floor(rng() * (config.lanes - 1)))) % config.lanes;
+  const laneOf = (instrument) => config.instruments.findIndex((i) => i.id === instrument);
+  const { base, doubles: doubleHits, offbeats } = config.groove;
+  const sections = config.song.sections;
   const notes = [];
-  for (let b = 0; b < config.beats; b += 1) {
-    const t = (config.leadInBeats + b) * spb;
-    const first = lane();
-    notes.push({ t, lane: first });
-    if (rng() < pDouble) notes.push({ t, lane: other(first) });
-    // Pas de contretemps après le dernier temps : la battle finit sur le temps.
-    if (b < config.beats - 1 && rng() < pOff) notes.push({ t: t + spb / 2, lane: lane() });
-  }
+  const at = (beat) => (config.leadInBeats + beat) * spb;
+  const downbeat = (beat) => {
+    notes.push({ t: at(beat), lane: laneOf(base[0]) });
+    for (const d of doubleHits) if (d.beat === 1 && rng() < pDouble) notes.push({ t: at(beat), lane: laneOf(d.lane) });
+  };
+  songBars(data).forEach(({ section }, bar) => {
+    const intensity = sections[section].intensity ?? 1;
+    const last = bar === config.beats / 4 - 1;
+    for (let i = 0; i < 4; i += 1) {
+      const beat = bar * 4 + i;
+      if (i === 0) downbeat(beat);
+      else notes.push({ t: at(beat), lane: laneOf(base[i]) });
+      if (i > 0) for (const d of doubleHits) if (d.beat === i + 1 && rng() < pDouble) notes.push({ t: at(beat), lane: laneOf(d.lane) });
+      // Contretemps (le « et » après le temps) ; pas après le 4e temps de la dernière mesure.
+      const off = offbeats.find((o) => o.beat === i + 1);
+      if (off && !(last && i === 3) && rng() < pOff * intensity) notes.push({ t: at(beat) + spb / 2, lane: laneOf(off.lane) });
+    }
+  });
+  downbeat(config.beats); // l'accord de fin
   notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
-  const duration = (config.leadInBeats + config.beats + 1) * spb;
+  const duration = (config.leadInBeats + config.beats + 2) * spb;
   return { notes, duration, spb };
 }
 

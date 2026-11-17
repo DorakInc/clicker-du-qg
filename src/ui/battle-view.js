@@ -6,17 +6,17 @@
 //   actions.getState()                     → l'état du jeu, pour les mises et les blocages
 // `audio` (src/audio/audio.js) donne l'horloge et joue les sons.
 //
-// Son et image calés : toute la batterie est programmée d'avance sur l'horloge audio
-// (décompte 1-2-3-4 aux baguettes, puis grosse caisse sur chaque temps et charleston
-// sur chaque croche), et l'image lit la même horloge. Une note touche la ligne
-// exactement quand le temps sonne. Chaque pad joue son instrument (data/battle.json →
-// instruments). Tout est dans la tonalité des accords (chords, en demi-tons autour du do
-// des fichiers son) : le piano joue l'accord de la mesure (tuned: "chord"), le kick du pad
-// et la grosse caisse de fond jouent sa fondamentale, la première note de l'accord
+// Son et image calés : le métronome est programmé d'avance sur l'horloge audio
+// (décompte 1-2-3-4 aux baguettes, puis le charleston sur chaque temps et chaque croche,
+// plus fort au 1er temps de la mesure), et l'image lit la même horloge. Une note touche
+// la ligne exactement quand le temps sonne. Pas de batterie de fond : c'est le joueur qui
+// joue le beat avec les pads (data/battle.json → instruments). Tout suit la grille
+// d'accords de la chanson (song, chords ; demi-tons autour du do des fichiers son) : le
+// piano joue l'accord de la mesure (tuned: "chord"), le kick sa fondamentale
 // (tuned: "root"). Une note ratée ne fait aucun bruit.
 
 import {
-  advanceRun, battleBlock, battleCooldownLeft, battlePayout, battleStakes, battleTarget, createRun, formatDuration,
+  advanceRun, songAt, battleBlock, battleCooldownLeft, battlePayout, battleStakes, battleTarget, createRun, formatDuration,
   formatMoney, formatNumber, runAccuracy, runDone, tapRun,
 } from '../game/index.js';
 
@@ -165,6 +165,7 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
     $('battle-accuracy').textContent = '—';
     $('battle-combo').textContent = '';
     $('battle-judge').textContent = '';
+    $('battle-song').textContent = '';
     showPhase('play');
     openSheet('sheet-battle', { locked: true }); // pas de fermeture en pleine battle
     await audio.ready(); // le son débloqué et les fichiers décodés, sinon la batterie partirait en retard
@@ -184,21 +185,18 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
     frameId = requestAnimationFrame(frame);
   };
 
-  /** Toute la batterie de la partie, programmée d'avance sur l'horloge audio. */
+  /** Le métronome de la partie, programmé d'avance sur l'horloge audio. */
   function scheduleDrums(chart) {
     const { spb } = chart;
     const lead = data.battle.leadInBeats;
     const total = lead + data.battle.beats;
     for (let b = 0; b < lead; b += 1) audio.playAt('battleCount', startedAt + b * spb, { volume: b === 0 ? 1 : 0.8 });
-    for (let b = lead; b < total; b += 1) {
+    for (let b = lead; b <= total; b += 1) { // jusqu'à l'accord de fin compris
       const at = startedAt + b * spb;
       const downbeat = (b - lead) % 4 === 0; // premier temps de la mesure
-      audio.playAt('battleBeat', at, { volume: downbeat ? 1 : 0.8, rate: semitoneRate(chordAt(b * spb)[0]) });
-      audio.playAt('battleHat', at, { volume: 0.5 });
-      audio.playAt('battleHat', at + spb / 2, { volume: 0.35 });
+      audio.playAt('battleHat', at, { volume: downbeat ? 0.8 : 0.55 });
+      if (b < total) audio.playAt('battleHat', at + spb / 2, { volume: 0.3 });
     }
-    // La fin tombe sur le temps : un dernier kick sur la fondamentale du premier accord.
-    audio.playAt('battleKick', startedAt + total * spb, { rate: semitoneRate((data.battle.chords ?? [[0]])[0][0]) });
   }
 
   /** Temps de la partie, en secondes : l'horloge audio, moins la latence du haut-parleur. */
@@ -206,22 +204,18 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
 
   const semitoneRate = (semitones) => 2 ** (semitones / 12);
 
-  /** L'accord de la mesure en cours, en demi-tons autour du do des fichiers son. */
-  function chordAt(t) {
-    const chords = data.battle.chords ?? [[0]];
-    const measure = Math.max(0, Math.floor((t / secondsPerBeat - data.battle.leadInBeats) / 4));
-    return chords[((measure % chords.length) + chords.length) % chords.length];
-  }
+  /** La mesure de la chanson au temps `t` de la partie (accord, section). */
+  const songNow = (t) => songAt(data, Math.round(t / secondsPerBeat * 2) / 2 - data.battle.leadInBeats);
 
   /** Le son de l'instrument du pad, dans la tonalité de la mesure en cours. */
   function playInstrument(lane, t) {
     const instrument = instruments[lane];
     if (!instrument) return;
-    const chord = chordAt(t);
+    const { notes, root } = songNow(t);
     if (instrument.tuned === 'chord') {
-      for (const semitones of chord) audio.play(instrument.sound, { rate: semitoneRate(semitones), volume: 0.5 });
+      for (const semitones of notes) audio.play(instrument.sound, { rate: semitoneRate(semitones), volume: 0.4 });
     } else if (instrument.tuned === 'root') {
-      audio.play(instrument.sound, { rate: semitoneRate(chord[0]) });
+      audio.play(instrument.sound, { rate: semitoneRate(root) });
     } else {
       audio.play(instrument.sound);
     }
@@ -283,6 +277,10 @@ export function createBattleView(data, actions, { openSheet, closeSheet, audio }
         el.classList.add('is-pop');
       } else if (beat === lead) {
         $('battle-judge').textContent = '';
+      }
+      if (beat >= 0) {
+        const song = songAt(data, beat - lead);
+        $('battle-song').textContent = `${song.sectionName} · ${song.chord}`;
       }
       $('battle-track').classList.toggle('is-beat', beat >= 0);
       $('battle-track').classList.toggle('is-downbeat', beat >= lead && (beat - lead) % 4 === 0);

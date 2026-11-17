@@ -31,7 +31,6 @@
     "petPet": [],
     "battleStart": [],
     "battleCount": ["effets/battle-count-01.m4a"],
-    "battleBeat": ["effets/battle-beat-01.m4a"],
     "battleHat": ["effets/battle-hat-01.m4a"],
     "battleSnare": ["effets/battle-snare-01.m4a"],
     "battlePiano": ["effets/battle-piano-01.m4a"],

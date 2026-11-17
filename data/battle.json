@@ -1,6 +1,6 @@
 {
   "bpm": 86,
-  "beats": 24,
+  "beats": 32,
   "leadInBeats": 4,
   "lanes": 3,
   "instruments": [
@@ -8,7 +8,27 @@
     { "id": "piano", "name": "Piano", "sound": "battlePiano", "tuned": "chord" },
     { "id": "kick", "name": "Kick", "sound": "battleKick", "tuned": "root" }
   ],
-  "chords": [[-3, 0, 4], [-7, -3, 0], [0, 4, 7], [-5, -1, 2]],
+  "song": {
+    "key": "do majeur",
+    "sections": [
+      { "name": "Couplet", "chords": ["Cmaj7", "Am7", "Dm7", "G7"], "intensity": 0.6 },
+      { "name": "Refrain", "chords": ["Fmaj7", "Em7", "Dm7", "G7"], "intensity": 1 }
+    ],
+    "ending": "Cmaj7"
+  },
+  "chords": {
+    "Cmaj7": { "root": 0, "notes": [0, 4, 7, 11] },
+    "Am7": { "root": -3, "notes": [-3, 0, 4, 7] },
+    "Dm7": { "root": 2, "notes": [-3, 0, 2, 5] },
+    "G7": { "root": -5, "notes": [-5, -1, 2, 5] },
+    "Fmaj7": { "root": -7, "notes": [-3, 0, 4, 5] },
+    "Em7": { "root": 4, "notes": [-5, -1, 2, 4] }
+  },
+  "groove": {
+    "base": ["piano", "caisse-claire", "kick", "caisse-claire"],
+    "doubles": [{ "beat": 1, "lane": "kick" }],
+    "offbeats": [{ "beat": 2, "lane": "kick" }, { "beat": 3, "lane": "kick" }, { "beat": 4, "lane": "piano" }]
+  },
   "windows": { "perfect": 0.08, "good": 0.16 },
   "points": { "perfect": 1, "good": 0.6 },
   "stakes": [0.1, 0.25, 0.5],
@@ -20,6 +40,6 @@
   "difficulty": {
     "target": { "easiest": 0.5, "hardest": 0.85 },
     "offbeat": { "easiest": 0.1, "hardest": 0.6 },
-    "doubles": { "easiest": 0, "hardest": 0.25 }
+    "doubles": { "easiest": 0, "hardest": 0.5 }
   }
 }
