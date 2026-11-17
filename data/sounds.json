@@ -29,11 +29,12 @@
     "adoptPet": [],
     "treatPet": [],
     "petPet": [],
-    "battleStart": [],
-    "battleNote": [],
-    "battleMiss": [],
-    "battleWin": [],
-    "battleLose": []
+    "battleStart": ["effets/provisoire/battle-debut.mp3"],
+    "battleNote": ["effets/provisoire/battle-note.mp3"],
+    "battleMiss": ["effets/provisoire/battle-rate.mp3"],
+    "battleWin": ["effets/provisoire/battle-victoire.mp3"],
+    "battleLose": ["effets/provisoire/battle-defaite.mp3"],
+    "battleBeat": ["effets/provisoire/battle-temps.mp3"]
   },
   "music": {
     "normal": null,

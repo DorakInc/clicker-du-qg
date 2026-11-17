@@ -3,7 +3,7 @@
 // qui tombent et on transmet les frappes. La mise et le résultat passent par `actions` :
 //   actions.start(idTerritoire, indexMise) → l'événement battleStart (avec la partition), ou null
 //   actions.finish(précision)              → les événements battleWin / battleLose (+ conquête)
-//   actions.sound(type)                    → petit son (battleNote, battleMiss)
+//   actions.sound(type)                    → petit son (battleBeat à chaque temps, battleNote, battleMiss)
 //   actions.getState()                     → l'état du jeu, pour les mises et les blocages
 // Le temps de la partie vient de performance.now() : il ne dépend pas de la boucle du jeu.
 
@@ -208,6 +208,7 @@ export function createBattleView(data, actions, { openSheet, closeSheet }) {
         el.textContent = beat === lead - 1 ? 'Go !' : String(lead - 1 - beat);
       }
       $('battle-track').classList.toggle('is-beat', beat % 2 === 0);
+      if (t < run.chart.duration) actions.sound('battleBeat'); // la grosse caisse donne le tempo
     }
 
     for (const note of advanceRun(run, data, t)) {

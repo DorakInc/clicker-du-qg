@@ -7,7 +7,8 @@
   "points": { "perfect": 1, "good": 0.6 },
   "stakes": [0.1, 0.25, 0.5],
   "minStake": 100,
-  "cooldownSeconds": 120,
+  "cooldownSeconds": 0,
+  "allowDuringFailOut": true,
   "payout": { "atTarget": 1.5, "perfect": 3 },
   "hypeShare": 0.1,
   "difficulty": {

@@ -40,6 +40,7 @@ test('battle.json : réglages valides', () => {
   assert.ok(b.windows.good < 30 / b.bpm, 'battle.json : la fenêtre « good » doit rester sous un demi-contretemps');
   assert.ok(b.points.perfect === 1 && b.points.good > 0 && b.points.good < 1, 'battle.json : points');
   assert.ok(b.stakes.length > 0 && b.stakes.every((s) => s > 0 && s <= 0.5), 'battle.json : mises entre 0 et 50 % du cash');
+  assert.ok(b.cooldownSeconds >= 0 && typeof b.allowDuringFailOut === 'boolean', 'battle.json : cooldownSeconds, allowDuringFailOut');
   assert.ok(b.payout.atTarget > 1 && b.payout.perfect >= b.payout.atTarget, 'battle.json : payout');
   for (const [key, { easiest, hardest }] of Object.entries(b.difficulty)) {
     assert.ok(easiest >= 0 && hardest <= 1 && easiest <= hardest, `battle.json : difficulty.${key}`);
@@ -68,20 +69,34 @@ test('on ne défie que les rivaux des territoires ouverts', () => {
   assert.equal(battleBlock(state, data, 'toronto'), 'rival', 'territoire déjà conquis');
 });
 
-test('pas de battle en fail out, pendant un événement, sans cash ou trop tôt pour la revanche', () => {
-  assert.equal(battleBlock(onMap({ failOut: true }), data, 'toronto'), 'failOut');
+test('pas de battle pendant un événement, sans cash ou pendant une autre battle', () => {
   const waiting = onMap();
   waiting.events.pending = 'police';
   assert.equal(battleBlock(waiting, data, 'toronto'), 'event');
   assert.equal(battleBlock(onMap({ money: 50 }), data, 'toronto'), 'money');
-
   const state = onMap();
   startBattle(state, data, 'toronto', 0, fixed(0.3));
   assert.equal(battleBlock(state, data, 'toronto'), 'busy');
-  finishBattle(state, data, 1);
-  assert.equal(battleBlock(state, data, 'toronto'), 'cooldown');
-  state.time += data.battle.cooldownSeconds;
-  assert.equal(battleBlock(state, data, 'toronto'), '');
+});
+
+test('fail out et revanche : selon battle.json', () => {
+  // Réglages stricts : pas de battle en fail out, 2 min avant la revanche.
+  const strict = { ...data, battle: { ...data.battle, allowDuringFailOut: false, cooldownSeconds: 120 } };
+  assert.equal(battleBlock(onMap({ failOut: true }), strict, 'toronto'), 'failOut');
+  const state = onMap();
+  startBattle(state, strict, 'toronto', 0, fixed(0.3));
+  finishBattle(state, strict, 1);
+  assert.equal(battleBlock(state, strict, 'toronto'), 'cooldown');
+  state.time += 120;
+  assert.equal(battleBlock(state, strict, 'toronto'), '');
+
+  // Réglages souples (ceux du jeu pour l'instant, le temps de tester) : on relance quand on veut.
+  const loose = { ...data, battle: { ...data.battle, allowDuringFailOut: true, cooldownSeconds: 0 } };
+  assert.equal(battleBlock(onMap({ failOut: true }), loose, 'toronto'), '');
+  const again = onMap();
+  startBattle(again, loose, 'toronto', 0, fixed(0.3));
+  finishBattle(again, loose, 0);
+  assert.equal(battleBlock(again, loose, 'toronto'), '', 'revanche tout de suite');
 });
 
 test('la mise : une part du cash, jamais plus de la moitié', () => {

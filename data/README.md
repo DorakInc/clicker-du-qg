@@ -244,9 +244,10 @@ Sur la carte, la fiche d'un territoire **ouvert** (ou en campagne) qui a un `riv
 | `windows` | Écart permis, en secondes, pour une frappe `perfect` et `good` (au-delà : ratée). |
 | `points` | Ce que vaut une note `perfect` (1) et `good`. Une frappe dans le vide compte comme une demi-note ratée. |
 | `stakes` | Les mises proposées, en part du cash (jamais plus de 0,5). `minStake` : mise minimale en $. |
-| `cooldownSeconds` | Attente avant une revanche contre le même rival (temps de jeu). |
+| `cooldownSeconds` | Attente avant une revanche contre le même rival (temps de jeu ; 0 = tout de suite, réglage actuel pour tester). |
+| `allowDuringFailOut` | `true` = on peut faire une battle pendant un fail out (réglage actuel pour tester) ; `false` = bloqué. |
 | `payout` | Ce que rapporte la mise si on bat le rival : `atTarget` pile au score du rival, jusqu'à `perfect` pour un sans-faute. Sinon, la mise est perdue. |
 | `hypeShare` | Hype gagnée par le territoire après une victoire, en part de sa barre (peut finir la conquête). |
 | `difficulty` | Du rival le plus faible (`easiest`) au plus fort (`hardest`), classés par `defense` dans `map.json` : `target` = précision à battre, `offbeat` = chance d'une note en contretemps, `doubles` = chance de deux notes en même temps. |
 
-Pas de battle pendant un fail out, ni quand un événement attend une réponse ; pas de nouvel événement pendant une battle. Une battle laissée en plan (jeu fermé) compte comme perdue. Les sons `battleStart`, `battleNote`, `battleMiss`, `battleWin`, `battleLose` sont dans `sounds.json`, les messages `battleWin`, `battleLose`, `battleForfeit` dans `texts.json`.
+Pas de battle quand un événement attend une réponse (ni pendant un fail out si `allowDuringFailOut` vaut `false`) ; pas de nouvel événement pendant une battle. Une battle laissée en plan (jeu fermé) compte comme perdue. Les sons `battleStart`, `battleBeat` (grosse caisse à chaque temps), `battleNote`, `battleMiss`, `battleWin`, `battleLose` sont dans `sounds.json`. Pour l'instant, ce sont des sons **provisoires** synthétisés, dans `assets/audio/effets/provisoire/` : le volet C les remplace en changeant les chemins dans `sounds.json`. Les messages `battleWin`, `battleLose`, `battleForfeit` sont dans `texts.json`.

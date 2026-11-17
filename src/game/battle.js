@@ -6,8 +6,9 @@
 //   - Le rival a un score à battre (sa précision), plus dur pour les gros territoires.
 //     Score battu : la mise revient multipliée (× 1,5 au score du rival, jusqu'à × 3 pour
 //     un sans-faute) et le territoire gagne de la hype. Sinon, la mise est perdue.
-//   - Une revanche contre le même rival attend `cooldownSeconds` (temps de jeu).
-//   - Jamais pendant un fail out ni quand un événement attend une réponse.
+//   - Une revanche contre le même rival attend `cooldownSeconds` (temps de jeu ; 0 = tout de suite).
+//   - Jamais quand un événement attend une réponse, ni pendant un fail out sauf si
+//     `allowDuringFailOut` vaut true (réglage actuel, le temps de tester).
 // La partie elle-même (notes, frappes) vit hors de la sauvegarde, dans un « run » :
 // seule la battle en cours (`state.battles.pending`) est sauvegardée. Si le jeu est fermé
 // pendant une battle, elle compte comme perdue (abandonBattle) : pas de rage quit gratuit.
@@ -73,7 +74,7 @@ export function battleStakes(state, data) {
 export function battleBlock(state, data, id, shareIndex = 0) {
   if (!battleRivals(state, data).some((t) => t.id === id)) return 'rival';
   if (state.battles.pending) return 'busy';
-  if (state.failOut) return 'failOut';
+  if (state.failOut && !data.battle.allowDuringFailOut) return 'failOut';
   if (state.events.pending) return 'event';
   if (battleCooldownLeft(state, data, id) > 0) return 'cooldown';
   const stake = battleStakes(state, data)[shareIndex];
